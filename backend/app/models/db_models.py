@@ -4,7 +4,6 @@ from sqlalchemy.orm import relationship, sessionmaker
 
 Base = declarative_base()
 
-
 class User(Base):
     __tablename__ = 'users'
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -13,8 +12,9 @@ class User(Base):
     balance = Column(DECIMAL)
     rank = Column(Integer)
     date_registered = Column(Date)
+    current_league_id = Column(Integer, ForeignKey('leagues.id'))
 
-    user_leagues = relationship('UserLeague', back_populates='user')
+    user_leagues = relationship('UserLeagues', back_populates='user')
     favorites = relationship('Favorite', back_populates='user')
 
 
@@ -53,31 +53,31 @@ class League(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String)
     type = Column(String)
-    start_date = Column(Date)
-    end_date = Column(Date)
-    created_by = Column(Integer, ForeignKey('users.id'))
+    start_date = Column(DateTime(timezone=True))
+    end_date = Column(DateTime(timezone=True))
+    created_by = Column(Integer, ForeignKey('users.id'), nullable=True)
 
-    user_leagues = relationship('UserLeague', back_populates='league')
-    portfolios = relationship('Portfolio', back_populates='league')
+    user_leagues = relationship('UserLeagues', back_populates='league')
 
 
-class UserLeague(Base):
+class UserLeagues(Base):
     __tablename__ = 'user_leagues'
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey('users.id'))
     league_id = Column(Integer, ForeignKey('leagues.id'))
+    portfolio_id = Column(Integer, ForeignKey('portfolios.id'))
 
     user = relationship('User', back_populates='user_leagues')
     league = relationship('League', back_populates='user_leagues')
+    portfolio = relationship('Portfolio', back_populates='user_leagues')
 
 
 class Portfolio(Base):
     __tablename__ = 'portfolios'
     id = Column(Integer, primary_key=True, autoincrement=True)
-    league_id = Column(Integer, ForeignKey('leagues.id'))
     current_value = Column(DECIMAL)
 
-    league = relationship('League', back_populates='portfolios')
+    user_leagues = relationship('UserLeagues', back_populates='portfolio')
     portfolio_players = relationship('PortfolioPlayer', back_populates='portfolio')
     portfolio_holds = relationship('PortfolioHold', back_populates='portfolio')
     portfolio_history = relationship('PortfolioHistory', back_populates='portfolio')
@@ -101,10 +101,12 @@ class PortfolioHold(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     portfolio_id = Column(Integer, ForeignKey('portfolios.id'))
     player_id = Column(Integer, ForeignKey('players.id'))
-    hold_deadline = Column(Date)
+    hold_deadline = Column(DateTime(timezone=True))
+    shares = Column(Integer)
 
     portfolio = relationship('Portfolio', back_populates='portfolio_holds')
     player = relationship('Player', back_populates='portfolio_holds')
+
 
 
 class Transaction(Base):
@@ -114,7 +116,7 @@ class Transaction(Base):
     player_id = Column(Integer, ForeignKey('players.id'))
     shares = Column(Integer)
     price = Column(DECIMAL)
-    transaction_date = Column(Date)
+    transaction_date = Column(DateTime(timezone=True))
     portfolio_id = Column(Integer, ForeignKey('portfolios.id'))
 
     portfolio = relationship('Portfolio', back_populates='transactions')
@@ -125,7 +127,7 @@ class PortfolioHistory(Base):
     __tablename__ = 'portfolio_history'
     id = Column(Integer, primary_key=True, autoincrement=True)
     value = Column(DECIMAL)
-    date = Column(DateTime)
+    date = Column(DateTime(timezone=True))
     portfolio_id = Column(Integer, ForeignKey('portfolios.id'))
 
     portfolio = relationship('Portfolio', back_populates='portfolio_history')
