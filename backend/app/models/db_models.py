@@ -7,11 +7,9 @@ Base = declarative_base()
 class User(Base):
     __tablename__ = 'users'
     id = Column(Integer, primary_key=True, autoincrement=True)
-    username = Column(String, unique=True)
-    password = Column(String)
-    balance = Column(DECIMAL)
-    rank = Column(Integer)
-    date_registered = Column(Date)
+    username = Column(String(50), unique=True)
+    password = Column(String(255))
+    date_registered = Column(DateTime(timezone=True))
     current_league_id = Column(Integer, ForeignKey('leagues.id'))
 
     user_leagues = relationship('UserLeagues', back_populates='user')
@@ -21,15 +19,15 @@ class User(Base):
 class Player(Base):
     __tablename__ = 'players'
     id = Column(Integer, primary_key=True, autoincrement=True)
-    puuid = Column(String, unique=True)
-    summoner_id = Column(String, unique=True)
-    game_name = Column(String)
-    game_name_lower = Column(String)
-    tag_line = Column(String)
+    puuid = Column(String(100), unique=True)
+    summoner_id = Column(String(100), unique=True)
+    game_name = Column(String(50))
+    game_name_lower = Column(String(50))
+    tag_line = Column(String(10))
     delta_8h = Column(DECIMAL)
     delta_24h = Column(DECIMAL)
     delta_72h = Column(DECIMAL)
-    delist_date = Column(Date)
+    delist_date = Column(DateTime(timezone=True))
 
     player_data = relationship('PlayerData', back_populates='player')
     portfolio_players = relationship('PortfolioPlayer', back_populates='player')
@@ -42,7 +40,7 @@ class PlayerData(Base):
     __tablename__ = 'player_data'
     id = Column(Integer, primary_key=True, autoincrement=True)
     player_id = Column(Integer, ForeignKey('players.id'))
-    date = Column(Date)
+    date = Column(DateTime(timezone=True))
     league_points = Column(Integer)
 
     player = relationship('Player', back_populates='player_data')
@@ -51,8 +49,8 @@ class PlayerData(Base):
 class League(Base):
     __tablename__ = 'leagues'
     id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String)
-    type = Column(String)
+    name = Column(String(50))
+    type = Column(String(50))
     start_date = Column(DateTime(timezone=True))
     end_date = Column(DateTime(timezone=True))
     created_by = Column(Integer, ForeignKey('users.id'), nullable=True)
@@ -66,6 +64,8 @@ class UserLeagues(Base):
     user_id = Column(Integer, ForeignKey('users.id'))
     league_id = Column(Integer, ForeignKey('leagues.id'))
     portfolio_id = Column(Integer, ForeignKey('portfolios.id'))
+    rank = Column(Integer)
+    balance = Column(DECIMAL)  # Add balance attribute
 
     user = relationship('User', back_populates='user_leagues')
     league = relationship('League', back_populates='user_leagues')
@@ -108,11 +108,10 @@ class PortfolioHold(Base):
     player = relationship('Player', back_populates='portfolio_holds')
 
 
-
 class Transaction(Base):
     __tablename__ = 'transactions'
     id = Column(Integer, primary_key=True, autoincrement=True)
-    type = Column(String)
+    type = Column(String(10))
     player_id = Column(Integer, ForeignKey('players.id'))
     shares = Column(Integer)
     price = Column(DECIMAL)

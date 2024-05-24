@@ -1,14 +1,19 @@
 from datetime import timezone
 from typing import List
+import logging
 
 from fastapi import HTTPException, status, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, asc, func
 
-from app.models.db_models import User, PlayerData, Transaction as TransactionModel, PortfolioHistory, Player, Portfolio
-from app.models.models import LeaderboardEntry, Transaction, UserPublic, PortfolioLeaderboardEntry
+from app.core.token import get_user_from_token
+from app.models.db_models import User, PlayerData, Transaction, PortfolioHistory, Player, Portfolio, \
+    UserLeagues
+from app.models.models import LeaderboardEntry, Transaction as TransactionModel, UserPublic, PortfolioLeaderboardEntry
 from app.db.database import get_database_session
 from app.models.pricing_model import price_model
+
+logger = logging.getLogger(__name__)
 
 
 def fetch_leaderboard_entries(lead_type: str, page: int = 0, limit: int = 100, db: Session = Depends(get_database_session)) -> List[LeaderboardEntry]:
@@ -98,21 +103,51 @@ def fetch_portfolio_leaderboard(page: int = 0, limit: int = 100, db: Session = D
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f'Failed to fetch portfolio leaderboard data: {str(e)}')
 
 
-# def fetch_recent_transactions(user: UserPublic = Depends(get_user_from_token), db: Session = Depends(get_database_session)) -> List[Transaction]:
-#     try:
-#         user_data = db.query(User).filter(User.username == user.username).first()
-#
-#         transactions = db.query(TransactionModel).filter(TransactionModel.user_id == user_data.id).all()
-#         recent_transactions = []
-#         for t in transactions:
-#             t.transaction_date = t.transaction_date.replace(tzinfo=timezone.utc)  # Ensure the datetime is timezone-aware
-#             recent_transactions.append(Transaction(**t.__dict__))
-#
-#         for transaction in recent_transactions:
-#             transaction.price = price_model(transaction.price)
-#
-#         # Reversing the list of transactions
-#         list_transactions = list(recent_transactions)
-#         return list_transactions
-#     except Exception as e:
-#         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f'Failed to fetch recent transactions: {str(e)}')
+def fetch_recent_transactions(user: UserPublic, db: Session) -> List[TransactionModel]:
+    try:
+        user_record = db.query(User).filter(User.username == user.username).first()
+        if not user_record:
+            logger.error(f"User not found: {user.username}")
+            raise HTTPException(status_code=404, detail='User not found')
+
+        user_league = db.query(UserLeagues).filter(
+            UserLeagues.user_id == user_record.id,
+            UserLeagues.league_id == user_record.current_league_id
+        ).first()
+        if not user_league:
+            logger.error(f"User not associated with current league: {user.username}")
+            raise HTTPException(status_code=404, detail='User not associated with current league')
+
+        transactions = db.query(Transaction).filter(Transaction.portfolio_id == user_league.portfolio_id).all()
+        if not transactions:
+            logger.info(f"No transactions found for user: {user.username}")
+
+        recent_transactions = []
+        for t in transactions:
+            player = db.query(Player).filter(Player.id == t.player_id).first()
+            if not player:
+                logger.error(f"Player not found for player_id: {t.player_id}")
+                continue
+
+            t.transaction_date = t.transaction_date.replace(tzinfo=timezone.utc)  # Ensure the datetime is timezone-aware
+            transaction_dict = {
+                "id": t.id,
+                "portfolio_id": t.portfolio_id,
+                "type": t.type,
+                "player_id": t.player_id,
+                "shares": t.shares,
+                "price": price_model(float(t.price)),  # Convert Decimal to float and apply pricing model
+                "transaction_date": t.transaction_date,
+                "gameName": player.game_name,  # Include gameName
+            }
+            recent_transactions.append(TransactionModel(**transaction_dict))
+
+        # Reversing the list of transactions to maintain the correct order
+        list_transactions = list(recent_transactions)[::-1]
+        return list_transactions
+    except HTTPException as e:
+        logger.error(f"HTTPException: {str(e)}")
+        raise e
+    except Exception as e:
+        logger.error(f"Unexpected error: {str(e)}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f'Failed to fetch recent transactions: {str(e)}')

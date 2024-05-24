@@ -17,27 +17,31 @@ class Player(BasePlayer):
     purchase_price: float
     shares: int
 
-    def total(self) -> int:
-        return self.shares * self.price
+    def total(self) -> float:
+        return self.shares * self.current_price
 
 
 class Holds(BaseModel):
+    id: int
     gameName: str
     shares: int
     hold_deadline: datetime
 
 
 class Portfolio(BaseModel):
+    id: int
     players: Dict[str, Player] = {}
     holds: List[Holds] = []
 
 
 class PortfolioHistory(BaseModel):
+    id: int
     value: float
     date: datetime
 
 
 class Transaction(BaseModel):
+    id: int
     type: str  # 'buy' or 'sell'
     gameName: str
     shares: int
@@ -63,18 +67,16 @@ class FavoritesResponse(BaseModel):
 
 class UserPublic(BaseModel):
     username: str
-    portfolio: Portfolio = Portfolio()
     transactions: List[Transaction] = []
     one_day_change: float = 0.0
     three_day_change: float = 0.0
-    rank: Optional[int] = None
-    portfolio_history: List[PortfolioHistory] = []
+    date_registered: datetime
 
 
 class UserProfile(UserPublic):
-    balance: float = 100_000.0
+    leagues: List['LeagueWithPortfolio'] = []
     favorites: List[FavoritesEntry] = []
-    date_registered: datetime
+    current_league_id: int
 
 
 class UserSelf(UserProfile):
@@ -142,19 +144,25 @@ class League(BaseModel):
     type: str
     start_date: datetime
     end_date: datetime
-    created_by: int
+    created_by: Optional[int] = None  # Nullable field
 
 
 class UserLeague(BaseModel):
     user_id: int
     league_id: int
+    portfolio_id: int
+    balance: float = 100_000.0
+    rank: Optional[int] = None
 
 
-class LeagueWithPortfolios(BaseModel):
+class LeagueWithPortfolio(BaseModel):
     league: League
-    portfolios: List[Portfolio]
+    portfolio: Portfolio
+    portfolio_history: List[PortfolioHistory]
+    one_day_change: Optional[float] = None
+    three_day_change: Optional[float] = None
 
 
 class UserWithLeagues(BaseModel):
     user: UserProfile
-    leagues: List[LeagueWithPortfolios]
+    leagues: List[LeagueWithPortfolio]

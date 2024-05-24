@@ -46,7 +46,6 @@ async def get_user(username: str, db: Session = Depends(get_database_session)):
         transactions=getattr(user_data, 'transactions', []),
         one_day_change=0.0,  # Compute this value if needed
         three_day_change=0.0,  # Compute this value if needed
-        rank=user_data.rank,
         portfolio_history=getattr(user_data, 'portfolio_history', [])
     )
 
@@ -61,8 +60,6 @@ async def read_profile(token: str = Depends(oauth2_scheme), db: Session = Depend
         username=user_data.username,
         one_day_change=0.0,  # Compute this value if needed
         three_day_change=0.0,  # Compute this value if needed
-        rank=user_data.rank,
-        balance=user_data.balance,
         favorites=getattr(user_data, 'favorites', []),
         date_registered=user_data.date_registered
     )
