@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.models.models import LeaderboardResponse, PortfolioLeaderboardResponse
 from app.core.logic import fetch_leaderboard_entries, fetch_portfolio_leaderboard
-from app.db.database import get_database_session
+from app.db.database import get_db
 
 router = APIRouter()
 
@@ -21,7 +21,7 @@ async def get_leaderboard(
     response_model=Depends(response_model_selector),  # Inject the dynamically determined model
     limit: int = Query(default=100, ge=1),
     page: int = Query(default=0, ge=0),
-    db: Session = Depends(get_database_session)  # Inject the database session
+    db: Session = Depends(get_db)  # Inject the database session
 ):
     if lead_type == "portfolio":
         entries = fetch_portfolio_leaderboard(page=page, limit=limit, db=db)

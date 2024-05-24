@@ -85,6 +85,7 @@ class UserSelf(UserProfile):
 
 class ToggleFavoriteRequest(BaseModel):
     gameName: str  # Ensuring the request model matches the expected input
+    tagLine: str
 
 
 class LeaderboardEntry(BaseModel):

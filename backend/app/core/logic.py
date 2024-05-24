@@ -10,13 +10,13 @@ from app.core.token import get_user_from_token
 from app.models.db_models import User, PlayerData, Transaction, PortfolioHistory, Player, Portfolio, \
     UserLeagues
 from app.models.models import LeaderboardEntry, Transaction as TransactionModel, UserPublic, PortfolioLeaderboardEntry
-from app.db.database import get_database_session
+from app.db.database import get_database_session, get_db
 from app.models.pricing_model import price_model
 
 logger = logging.getLogger(__name__)
 
 
-def fetch_leaderboard_entries(lead_type: str, page: int = 0, limit: int = 100, db: Session = Depends(get_database_session)) -> List[LeaderboardEntry]:
+def fetch_leaderboard_entries(lead_type: str, page: int = 0, limit: int = 100, db: Session = Depends(get_db)) -> List[LeaderboardEntry]:
     A = 1.75
     B = 0.00698
     skip = page * limit
@@ -82,7 +82,7 @@ def fetch_leaderboard_entries(lead_type: str, page: int = 0, limit: int = 100, d
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f'Failed to fetch leaderboard data: {str(e)}')
 
 
-def fetch_portfolio_leaderboard(page: int = 0, limit: int = 100, db: Session = Depends(get_database_session)) -> List[PortfolioLeaderboardEntry]:
+def fetch_portfolio_leaderboard(page: int = 0, limit: int = 100, db: Session = Depends(get_db)) -> List[PortfolioLeaderboardEntry]:
     skip = page * limit
 
     try:
