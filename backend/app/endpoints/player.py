@@ -4,14 +4,14 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
 
-from app.db.database import get_database_session
+from app.db.database import get_db
 from app.models.db_models import Player, PlayerData
 from app.models.pricing_model import price_model  # Assuming your pricing model is in app/models
 
 router = APIRouter()
 
 @router.get('/players/{gameName}/{tagLine}')
-async def player_info(gameName: str, tagLine: str, db: Session = Depends(get_database_session)):
+async def player_info(gameName: str, tagLine: str, db: Session = Depends(get_db)):
     try:
         # Fetch the player data from the database
         player = db.query(Player).filter(and_(Player.game_name == gameName, Player.tag_line == tagLine)).first()

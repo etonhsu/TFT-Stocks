@@ -49,6 +49,19 @@ class Transaction(BaseModel):
     transaction_date: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
+class TransactionWithTagLine(BaseModel):
+    id: int
+    type: str  # 'buy' or 'sell'
+    gameName: str
+    tagLine: str
+    shares: int
+    price: float
+    transaction_date: datetime
+
+    class Config:
+        from_attributes = True
+
+
 class TransactionRequest(BaseModel):
     shares: int
 
@@ -59,6 +72,7 @@ class FavoritesEntry(BaseModel):
     eight_hour_change: float = 0.0
     one_day_change: float = 0.0
     three_day_change: float = 0.0
+    tag_line: Optional[str]
 
 
 class FavoritesResponse(BaseModel):
@@ -67,9 +81,6 @@ class FavoritesResponse(BaseModel):
 
 class UserPublic(BaseModel):
     username: str
-    transactions: List[Transaction] = []
-    one_day_change: float = 0.0
-    three_day_change: float = 0.0
     date_registered: datetime
 
 
@@ -90,6 +101,7 @@ class ToggleFavoriteRequest(BaseModel):
 
 class LeaderboardEntry(BaseModel):
     gameName: str
+    tagLine: str
     lp: float  # League points
     delta_8h: float  # Change in 8 hours
     delta_24h: float  # Change in 24 hours
@@ -116,7 +128,7 @@ class PortfolioLeaderboardResponse(BaseModel):
 class TopLeaderboardEntry(BaseModel):
     name: str
     value: float
-
+    tagLine: Optional[str] = None
 
 class TopLeaderboard(BaseModel):
     price: TopLeaderboardEntry
@@ -160,8 +172,11 @@ class LeagueWithPortfolio(BaseModel):
     league: League
     portfolio: Portfolio
     portfolio_history: List[PortfolioHistory]
+    transactions: List[Transaction] = []
     one_day_change: Optional[float] = None
     three_day_change: Optional[float] = None
+    balance: float = 100_000.0
+    rank: Optional[int] = None
 
 
 class UserWithLeagues(BaseModel):

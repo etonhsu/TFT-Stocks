@@ -9,16 +9,23 @@ from sqlalchemy import desc, asc, func
 from app.core.token import get_user_from_token
 from app.models.db_models import User, PlayerData, Transaction, PortfolioHistory, Player, Portfolio, \
     UserLeagues
-from app.models.models import LeaderboardEntry, Transaction as TransactionModel, UserPublic, PortfolioLeaderboardEntry
+from app.models.models import LeaderboardEntry, Transaction as TransactionModel, TransactionWithTagLine, UserPublic, PortfolioLeaderboardEntry
 from app.db.database import get_database_session, get_db
 from app.models.pricing_model import price_model
 
 logger = logging.getLogger(__name__)
 
 
+from typing import List
+from fastapi import HTTPException, status, Depends
+from sqlalchemy.orm import Session
+from sqlalchemy import func, desc, asc
+
+from app.models.db_models import PlayerData, Player
+from app.models.models import LeaderboardEntry
+from app.db.database import get_database_session
+
 def fetch_leaderboard_entries(lead_type: str, page: int = 0, limit: int = 100, db: Session = Depends(get_db)) -> List[LeaderboardEntry]:
-    A = 1.75
-    B = 0.00698
     skip = page * limit
 
     try:
@@ -31,7 +38,7 @@ def fetch_leaderboard_entries(lead_type: str, page: int = 0, limit: int = 100, d
         }
 
         if 'neg_' in lead_type:
-            sort_field = lead_type.replace('neg_', '')  # Remove 'neg_' prefix for correct field name
+            sort_field = lead_type.replace('neg_', 'delta_')  # Remove 'neg_' prefix for correct field name
             sort_direction = asc  # Sort ascending for 'neg_' versions
         else:
             sort_field = lead_type
@@ -64,11 +71,12 @@ def fetch_leaderboard_entries(lead_type: str, page: int = 0, limit: int = 100, d
 
         entries = []
         for index, item in enumerate(player_data):
-            lp_value = ((item.league_points ** A) * B) + 10
+            lp_value = price_model(item.league_points)
             player = item.player
 
             entry = LeaderboardEntry(
                 gameName=player.game_name,
+                tagLine=player.tag_line,
                 lp=lp_value,
                 delta_8h=player.delta_8h,
                 delta_24h=player.delta_24h,
@@ -86,7 +94,15 @@ def fetch_portfolio_leaderboard(page: int = 0, limit: int = 100, db: Session = D
     skip = page * limit
 
     try:
-        query = db.query(User.username, Portfolio.current_value).join(Portfolio).order_by(desc(Portfolio.current_value)).offset(skip).limit(limit)
+        # Explicitly define the join condition
+        query = (
+            db.query(User.username, Portfolio.current_value)
+            .join(UserLeagues, User.id == UserLeagues.user_id)
+            .join(Portfolio, UserLeagues.portfolio_id == Portfolio.id)
+            .order_by(desc(Portfolio.current_value))
+            .offset(skip)
+            .limit(limit)
+        )
 
         user_portfolios = query.all()
         entries = []
@@ -103,7 +119,7 @@ def fetch_portfolio_leaderboard(page: int = 0, limit: int = 100, db: Session = D
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f'Failed to fetch portfolio leaderboard data: {str(e)}')
 
 
-def fetch_recent_transactions(user: UserPublic, db: Session) -> List[TransactionModel]:
+def fetch_recent_transactions(user: UserPublic, db: Session) -> List[TransactionWithTagLine]:
     try:
         user_record = db.query(User).filter(User.username == user.username).first()
         if not user_record:
@@ -129,18 +145,22 @@ def fetch_recent_transactions(user: UserPublic, db: Session) -> List[Transaction
                 logger.error(f"Player not found for player_id: {t.player_id}")
                 continue
 
+            logger.debug(f"Fetched player data: {player}")
+            logger.debug(f"Player game_name: {player.game_name}, Player tag_line: {player.tag_line}")
+
             t.transaction_date = t.transaction_date.replace(tzinfo=timezone.utc)  # Ensure the datetime is timezone-aware
-            transaction_dict = {
-                "id": t.id,
-                "portfolio_id": t.portfolio_id,
-                "type": t.type,
-                "player_id": t.player_id,
-                "shares": t.shares,
-                "price": price_model(float(t.price)),  # Convert Decimal to float and apply pricing model
-                "transaction_date": t.transaction_date,
-                "gameName": player.game_name,  # Include gameName
-            }
-            recent_transactions.append(TransactionModel(**transaction_dict))
+
+            # Directly use the Pydantic model
+            transaction = TransactionWithTagLine(
+                id=t.id,
+                type=t.type,
+                gameName=player.game_name,  # Include gameName
+                tagLine=player.tag_line,  # Include tagLine
+                shares=t.shares,
+                price=float(t.price),  # Convert Decimal to float
+                transaction_date=t.transaction_date,
+            )
+            recent_transactions.append(transaction)
 
         # Reversing the list of transactions to maintain the correct order
         list_transactions = list(recent_transactions)[::-1]

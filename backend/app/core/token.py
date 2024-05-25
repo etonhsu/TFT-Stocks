@@ -4,11 +4,11 @@ from jwt import DecodeError, ExpiredSignatureError
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
 
-from app.db.database import get_database_session
+from app.db.database import get_database_session, get_db
 from app.models.db_models import User, Portfolio, UserLeagues, PortfolioPlayer, PortfolioHold, Transaction, Player, \
-    PortfolioHistory as DBPortfolioHistory, League as DBLeague, PlayerData
+    PortfolioHistory as DBPortfolioHistory, League as DBLeague, PlayerData, UserLeagues as DBUserLeagues, Transaction as DBTransaction
 from app.models.models import UserProfile, Portfolio as PortfolioModel, Player as PlayerModel, Holds, \
-    Transaction as TransactionModel, PortfolioHistory, LeagueWithPortfolio, League
+    Transaction, PortfolioHistory, LeagueWithPortfolio, League
 from app.models.pricing_model import price_model
 from app.utils.get_secret import get_secret
 from datetime import datetime, timedelta, timezone
@@ -57,7 +57,7 @@ def get_user_from_token(token: str = Depends(oauth2_scheme)):
                 raise HTTPException(status_code=404, detail="User not found")
             logging.debug(f"User record: {user}")
 
-            user_leagues = db.query(UserLeagues).filter(UserLeagues.user_id == user.id).all()
+            user_leagues = db.query(DBUserLeagues).filter(DBUserLeagues.user_id == user.id).all()
             leagues_with_portfolios = []
 
             for user_league in user_leagues:
@@ -68,6 +68,7 @@ def get_user_from_token(token: str = Depends(oauth2_scheme)):
                 players = db.query(PortfolioPlayer).filter(PortfolioPlayer.portfolio_id == portfolio.id).all()
                 holds = db.query(PortfolioHold).filter(PortfolioHold.portfolio_id == portfolio.id).all()
                 portfolio_history = db.query(DBPortfolioHistory).filter(DBPortfolioHistory.portfolio_id == portfolio.id).all()
+                transactions = db.query(DBTransaction).filter(DBTransaction.portfolio_id == portfolio.id).all()
 
                 # Construct the players dictionary
                 players_dict = {}
@@ -104,6 +105,19 @@ def get_user_from_token(token: str = Depends(oauth2_scheme)):
                     for history in portfolio_history
                 ]
 
+                # Construct the transactions list
+                transactions_list = [
+                    Transaction(
+                        id=transaction.id,
+                        type=transaction.type,
+                        gameName=db.query(Player).filter(Player.id == transaction.player_id).first().game_name,
+                        shares=transaction.shares,
+                        price=transaction.price,
+                        transaction_date=transaction.transaction_date
+                    )
+                    for transaction in transactions
+                ]
+
                 # Append the league with portfolio to the list
                 leagues_with_portfolios.append(
                     LeagueWithPortfolio(
@@ -121,25 +135,23 @@ def get_user_from_token(token: str = Depends(oauth2_scheme)):
                             holds=holds_list
                         ),
                         portfolio_history=portfolio_history_list,
+                        transactions=transactions_list,
                         one_day_change=None,
-                        three_day_change=None
+                        three_day_change=None,
+                        balance=user_league.balance,
+                        rank=user_league.rank
                     )
                 )
 
             user_profile = UserProfile(
                 username=user.username,
                 leagues=leagues_with_portfolios,
-                transactions=[],  # Adjust this to fetch actual transactions
-                one_day_change=0.0,  # Calculate or fetch this value
-                three_day_change=0.0,  # Calculate or fetch this value
                 favorites=[],  # Adjust this to fetch actual favorites
                 date_registered=user.date_registered,
                 current_league_id=user.current_league_id
             )
             logging.debug(f"UserProfile: {user_profile}")
             return user_profile
-    except (DecodeError, ExpiredSignatureError) as e:
-        raise HTTPException(status_code=401, detail=str(e))
     except Exception as e:
         logging.error(f"An unexpected error occurred: {e}")
         raise HTTPException(status_code=500, detail="An error occurred")
