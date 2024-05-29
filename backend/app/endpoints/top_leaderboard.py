@@ -17,18 +17,31 @@ async def get_top_leaderboard(db: Session = Depends(get_db)):
         top_24h = db.query(Player).order_by(desc(Player.delta_24h)).first()
         top_72h = db.query(Player).order_by(desc(Player.delta_72h)).first()
 
-        # Fetch top price with name and tagLine
-        price_data = db.query(Player, func.max(PlayerData.league_points).label('last_lp'))\
+        # Subquery to get the latest PlayerData entry for each player
+        player_subquery = db.query(
+            PlayerData.player_id,
+            func.max(PlayerData.date).label('max_date')
+        ).group_by(PlayerData.player_id).subquery()
+
+        # Fetch top price with name and tagLine based on the latest league points
+        price_data = db.query(Player, PlayerData.league_points)\
             .join(PlayerData, Player.id == PlayerData.player_id)\
-            .group_by(Player.id)\
-            .order_by(desc('last_lp'))\
+            .join(player_subquery, (PlayerData.player_id == player_subquery.c.player_id) & (PlayerData.date == player_subquery.c.max_date))\
+            .order_by(desc(PlayerData.league_points))\
             .first()
+
+        # Subquery to get the latest PortfolioHistory entry for each portfolio
+        portfolio_subquery = db.query(
+            PortfolioHistory.portfolio_id,
+            func.max(PortfolioHistory.date).label('max_date')
+        ).group_by(PortfolioHistory.portfolio_id).subquery()
 
         # Fetch top portfolio value with name
         portfolio_data = db.query(User, PortfolioHistory.value)\
             .join(UserLeagues, User.id == UserLeagues.user_id)\
             .join(Portfolio, Portfolio.id == UserLeagues.portfolio_id)\
             .join(PortfolioHistory, Portfolio.id == PortfolioHistory.portfolio_id)\
+            .join(portfolio_subquery, (PortfolioHistory.portfolio_id == portfolio_subquery.c.portfolio_id) & (PortfolioHistory.date == portfolio_subquery.c.max_date))\
             .order_by(desc(PortfolioHistory.value))\
             .first()
 

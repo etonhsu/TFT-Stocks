@@ -11,7 +11,6 @@ const SearchBarContainer = styled.div`
     margin-left: 10px;
     height: 40px;
     width: 350px; 
-    
 `;
 
 const SearchSelect = styled.select`
@@ -36,7 +35,6 @@ const SearchInput = styled.input`
     }
 `;
 
-
 export const SearchBar: React.FC = () => {
     const [searchType, setSearchType] = useState<string>('players');
     const [query, setQuery] = useState<string>('');
@@ -56,9 +54,24 @@ export const SearchBar: React.FC = () => {
                 return response.json();
             })
             .then(data => {
-                // Assuming data has properties like gameName or username based on searchType
-                const redirectPath = searchType === 'players' ? `/players/${data.gameName}` : `/users/${data.username}`;
-                navigate(redirectPath);
+                // Assuming data is an array with objects containing gameName and tagLine for players
+                if (searchType === 'players') {
+                    if (Array.isArray(data) && data.length === 1) {
+                        const player = data[0];
+                        const redirectPath = `/players/${player.gameName}/${player.tagLine}`;
+                        navigate(redirectPath);
+                    } else if (Array.isArray(data) && data.length > 1) {
+                        const redirectPath = `/results/players/${searchQuery}`;
+                        navigate(redirectPath);
+                    } else {
+                        throw new Error('No matching data found.');
+                    }
+                } else if (searchType === 'users' && data.username) {
+                    const redirectPath = `/users/${data.username}`;
+                    navigate(redirectPath);
+                } else {
+                    throw new Error('No matching data found.');
+                }
                 setQuery('');
             })
             .catch(error => {
@@ -66,7 +79,6 @@ export const SearchBar: React.FC = () => {
                 alert(error.message);
             });
     };
-
 
     return (
         <SearchBarContainer>

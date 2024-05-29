@@ -25,10 +25,11 @@ export const TransactionPage: React.FC = () => {
                 }
                 setLoading(false);
             } catch (error) {
+                navigate('/');
                 console.error('Error fetching transactions:', error);
                 if (axios.isAxiosError(error) && error.response) {
                     if (error.response.status === 401) {
-                        navigate('/login');
+                        navigate('/');
                     }
                 }
                 setError('Failed to fetch transactions');

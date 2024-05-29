@@ -1,15 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from 'axios';
-import { StyledCell, StyledHeader, StyledRow, StyledTable } from "../containers/multiUse/TableStyle.tsx";
-import {formatCurrency} from "../utils/CurrencyFormatter.tsx";
-import {MainContent} from "../containers/general/MainContent.tsx";
-import {StyledPlayerLink} from "../containers/multiUse/LinkStyle.ts";
+import { StyledCell, StyledHeader, StyledRow, StyledTable } from "../containers/multiUse/TableStyle";
+import { formatCurrency } from "../utils/CurrencyFormatter";
+import { MainContent } from "../containers/general/MainContent";
+import { StyledPlayerLink } from "../containers/multiUse/LinkStyle";
 import styled from "styled-components";
-import {useAuth} from "../utils/Authentication.tsx";
+import { useAuth } from "../utils/Authentication";
 
 interface FavoriteData {
     name: string;
+    tagLine: string;
     current_price: number;
     eight_hour_change: number;
     one_day_change: number;
@@ -32,11 +33,6 @@ export const Favorites: React.FC = () => {
 
     useEffect(() => {
         const fetchData = async () => {
-            // if (!token) {
-            //     navigate('/login');
-            //     return;
-            // }
-
             try {
                 const response = await axios.get(`${backendUrl}/favorites`, {
                     headers: {
@@ -45,9 +41,10 @@ export const Favorites: React.FC = () => {
                 });
                 setFavoritesSummary(response.data.favorites);  // Assuming response.data.favorites is the correct path
             } catch (error) {
+                navigate('/');
                 console.error('Error fetching data:', error);
                 if (axios.isAxiosError(error) && error.response?.status === 401) {
-                    navigate('/login');
+                    navigate('/');
                 }
             } finally {
                 setLoading(false);
@@ -58,11 +55,19 @@ export const Favorites: React.FC = () => {
     }, [backendUrl, navigate, token]);
 
     if (isLoading) {
-        return <div>Loading...</div>;
+        return (
+            <MainContent className="mainContentContainer">
+                Loading...
+            </MainContent>
+        );
     }
 
     if (!favoritesSummary || favoritesSummary.length === 0) {
-        return <div>No data available.</div>;
+        return (
+            <MainContent className="mainContentContainer">
+                No data available.
+            </MainContent>
+        );
     }
 
     return (
@@ -82,7 +87,9 @@ export const Favorites: React.FC = () => {
                     <tbody>
                         {favoritesSummary.map((favorite, index) => (
                             <StyledRow key={index}>
-                                <StyledCell><StyledPlayerLink gameName={favorite.name}/></StyledCell>
+                                <StyledCell>
+                                    <StyledPlayerLink gameName={favorite.name} tagLine={favorite.tagLine} />
+                                </StyledCell>
                                 <StyledCell>{formatCurrency(favorite.current_price, 2)}</StyledCell>
                                 <StyledCell>{formatCurrency(favorite.eight_hour_change, 1)}</StyledCell>
                                 <StyledCell>{formatCurrency(favorite.one_day_change, 1)}</StyledCell>

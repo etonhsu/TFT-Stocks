@@ -9,7 +9,8 @@ from sqlalchemy import desc, asc, func
 from app.core.token import get_user_from_token
 from app.models.db_models import User, PlayerData, Transaction, PortfolioHistory, Player, Portfolio, \
     UserLeagues
-from app.models.models import LeaderboardEntry, Transaction as TransactionModel, TransactionWithTagLine, UserPublic, PortfolioLeaderboardEntry
+from app.models.models import LeaderboardEntry, Transaction as TransactionModel, TransactionWithTagLine, UserPublic, \
+    PortfolioLeaderboardEntry, UserProfile
 from app.db.database import get_database_session, get_db
 from app.models.pricing_model import price_model
 
@@ -90,21 +91,30 @@ def fetch_leaderboard_entries(lead_type: str, page: int = 0, limit: int = 100, d
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f'Failed to fetch leaderboard data: {str(e)}')
 
 
-def fetch_portfolio_leaderboard(page: int = 0, limit: int = 100, db: Session = Depends(get_db)) -> List[PortfolioLeaderboardEntry]:
+def fetch_portfolio_leaderboard(current_user: User, page: int, limit: int, db: Session) -> list[PortfolioLeaderboardEntry]:
     skip = page * limit
-
     try:
-        # Explicitly define the join condition
+        user_league_id = current_user.current_league_id
+        logging.debug(f"Current league ID for user {current_user.username}: {user_league_id}")
+
+        # Ensure the league ID is valid and accessible
+        user_league = db.query(UserLeagues).filter(UserLeagues.league_id == user_league_id).first()
+        if not user_league:
+            raise HTTPException(status_code=404, detail="User league not found")
+
         query = (
             db.query(User.username, Portfolio.current_value)
             .join(UserLeagues, User.id == UserLeagues.user_id)
             .join(Portfolio, UserLeagues.portfolio_id == Portfolio.id)
-            .order_by(desc(Portfolio.current_value))
+            .filter(UserLeagues.league_id == user_league_id)
+            .order_by(Portfolio.current_value.desc())
             .offset(skip)
             .limit(limit)
         )
 
         user_portfolios = query.all()
+        logging.debug(f"Portfolios fetched: {user_portfolios}")
+
         entries = []
         for index, (username, current_value) in enumerate(user_portfolios):
             entry = PortfolioLeaderboardEntry(
@@ -116,7 +126,9 @@ def fetch_portfolio_leaderboard(page: int = 0, limit: int = 100, db: Session = D
 
         return entries
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f'Failed to fetch portfolio leaderboard data: {str(e)}')
+        logging.error(f"Error in fetch_portfolio_leaderboard: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch portfolio leaderboard data: {str(e)}")
+
 
 
 def fetch_recent_transactions(user: UserPublic, db: Session) -> List[TransactionWithTagLine]:

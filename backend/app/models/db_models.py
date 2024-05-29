@@ -50,10 +50,13 @@ class League(Base):
     __tablename__ = 'leagues'
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(50))
-    type = Column(String(50))
     start_date = Column(DateTime(timezone=True))
     end_date = Column(DateTime(timezone=True))
+    player_count = Column(Integer, default=0)
     created_by = Column(Integer, ForeignKey('users.id'), nullable=True)
+    password = Column(String(255), nullable=True)
+    max_players = Column(Integer, nullable=True)
+    type = Column(String(50))
 
     user_leagues = relationship('UserLeagues', back_populates='league')
 

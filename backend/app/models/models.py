@@ -78,10 +78,12 @@ class FavoritesEntry(BaseModel):
 class FavoritesResponse(BaseModel):
     favorites: List[FavoritesEntry]
 
+    class Config:
+        from_attributes = True
+
 
 class UserPublic(BaseModel):
     username: str
-    date_registered: datetime
 
 
 class UserProfile(UserPublic):
@@ -90,7 +92,8 @@ class UserProfile(UserPublic):
     current_league_id: int
 
 
-class UserSelf(UserProfile):
+class UserSelf(UserPublic):
+    date_registered: datetime
     password: Optional[SecretStr] = None
 
 
@@ -154,10 +157,14 @@ class PasswordUpdateModel(BaseModel):
 class League(BaseModel):
     id: int
     name: str
-    type: str
     start_date: datetime
     end_date: datetime
-    created_by: Optional[int] = None  # Nullable field
+    created_by: Optional[int] = None
+    player_count: Optional[int] = None
+    type: Optional[str] = None
+
+    class Config:
+        from_attributes = True
 
 
 class UserLeague(BaseModel):
@@ -182,3 +189,44 @@ class LeagueWithPortfolio(BaseModel):
 class UserWithLeagues(BaseModel):
     user: UserProfile
     leagues: List[LeagueWithPortfolio]
+
+
+class LeagueOverview(BaseModel):
+    name: str
+    start_date: datetime
+    end_date: datetime
+    player_count: int
+    is_creator: bool
+    password: Optional[str] = None
+    max_players: Optional[int] = None
+
+    class Config:
+        from_attributes = True
+
+
+class LeagueDropdown(BaseModel):
+    name: str
+    current_value: float
+    rank: int
+    league_id: int
+
+
+class LeagueEdit(BaseModel):
+    name: Optional[str] = None
+    max_players: Optional[int] = None
+    password: Optional[str] = None
+
+
+class LeagueCreateRequest(BaseModel):
+    name: str
+    length: int  # Length of the league in days
+    max_players: Optional[int] = None
+    password: Optional[str] = None
+
+
+class LeagueJoinRequest(BaseModel):
+    name: str
+    password: str = None
+
+class UpdateCurrentLeagueRequest(BaseModel):
+    current_league_id: int

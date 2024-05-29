@@ -91,11 +91,12 @@ export const Dashboard: React.FC = () => {
             } catch (error) {
                 console.error('Error fetching data: ', error);
                 setLoading(false);
+                navigate('/');
                 if (axios.isAxiosError(error) && error.response) {
                     console.error('Detailed Error:', error.response.data);
                     console.error('Status code:', error.response.status);
                     if (error.response.status === 401) {
-                        navigate('/login');
+                        navigate('/');
                     } else if (error.response.status === 500) {
                         console.error('Server error, please try again later.');
                     }

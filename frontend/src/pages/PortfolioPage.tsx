@@ -33,6 +33,7 @@ export const PortfolioPage: React.FC = () => {
                 setUserSummary(response.data);
                 setLoading(false);
             } catch (error) {
+
                 console.error('Error fetching data: ', error);
                 setLoading(false);
 

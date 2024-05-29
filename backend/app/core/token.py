@@ -1,11 +1,8 @@
 from fastapi import HTTPException, Depends
 from fastapi.security import OAuth2PasswordBearer
-from jwt import DecodeError, ExpiredSignatureError
-from sqlalchemy.orm import Session
-from sqlalchemy import and_
 
-from app.db.database import get_database_session, get_db
-from app.models.db_models import User, Portfolio, UserLeagues, PortfolioPlayer, PortfolioHold, Transaction, Player, \
+from app.db.database import get_database_session
+from app.models.db_models import User, Portfolio, PortfolioPlayer, PortfolioHold, Transaction, Player, \
     PortfolioHistory as DBPortfolioHistory, League as DBLeague, PlayerData, UserLeagues as DBUserLeagues, Transaction as DBTransaction
 from app.models.models import UserProfile, Portfolio as PortfolioModel, Player as PlayerModel, Holds, \
     Transaction, PortfolioHistory, LeagueWithPortfolio, League
@@ -18,7 +15,7 @@ import jwt
 secrets = get_secret('tft-stocks-keys')
 key = secrets['secret_key']
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 180
+ACCESS_TOKEN_EXPIRE_MINUTES = 300
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 logging.basicConfig(level=logging.DEBUG)
@@ -124,10 +121,10 @@ def get_user_from_token(token: str = Depends(oauth2_scheme)):
                         league=League(
                             id=league.id,
                             name=league.name,
-                            type=league.type,
                             start_date=league.start_date,
                             end_date=league.end_date,
-                            created_by=league.created_by
+                            created_by=league.created_by,
+                            type=league.type
                         ),
                         portfolio=PortfolioModel(
                             id=portfolio.id,

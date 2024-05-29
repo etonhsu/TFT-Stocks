@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Leaderboard } from '../components/leaderboard/Leaderboard.tsx';
-import {fetchLeaderboardData, LeaderboardEntry, PortfolioLeaderboardEntry} from '../services/LeaderboardAPI';
+import { fetchLeaderboardData, LeaderboardEntry, PortfolioLeaderboardEntry } from '../services/LeaderboardAPI';
 import { MainContent } from "../containers/general/MainContent";
 import {
     LeaderboardButtonContainer,
@@ -8,7 +8,8 @@ import {
     PrevButtonContainer
 } from "../containers/leaderboard/LeaderboardContainer.tsx";
 import styled from "styled-components";
-import {PortfolioLeaderboard} from "../components/leaderboard/PortfolioLeaderboard.tsx";
+import { PortfolioLeaderboard } from "../components/leaderboard/PortfolioLeaderboard.tsx";
+import { useAuth } from '../utils/Authentication.tsx';
 
 export const StyledButton = styled.button`
     display: flex;
@@ -54,8 +55,8 @@ export const SwitchStyledButton = styled(StyledButton)`
     margin-bottom: 20px;
 `;
 
-
 export const LeaderboardPage = () => {
+    const { token } = useAuth();
     const [entries, setEntries] = useState<Array<LeaderboardEntry | PortfolioLeaderboardEntry>>([]);
     const [leadType, setLeadType] = useState<string>('portfolio');
     const [error, setError] = useState<string | null>(null);
@@ -66,7 +67,7 @@ export const LeaderboardPage = () => {
         const fetchData = async () => {
             setIsLoading(true);
             try {
-                const data = await fetchLeaderboardData(leadType, page, 100);
+                const data = await fetchLeaderboardData(leadType, token, page, 100);
                 setEntries(data.entries);
                 setIsLoading(false);
             } catch (error) {
@@ -77,7 +78,7 @@ export const LeaderboardPage = () => {
         };
 
         fetchData();
-    }, [leadType, page]);
+    }, [leadType, page, token]);
 
     const handleSortChange = (type: string) => {
         if (type !== leadType) {
@@ -104,11 +105,11 @@ export const LeaderboardPage = () => {
         <MainContent>
             <div>
                 <h1>{isPortfolio ? 'Portfolio Leaderboard' : 'Leaderboard'}</h1>
-                    <SwitchStyledButton onClick={toggleLeadType}>
-                        {leadType === 'lp' ? 'Portfolio' : 'Standard'} Leaderboard
-                    </SwitchStyledButton>
+                <SwitchStyledButton onClick={toggleLeadType}>
+                    {leadType === 'lp' ? 'Portfolio' : 'Standard'} Leaderboard
+                </SwitchStyledButton>
                 {isPortfolio ? (
-                    <PortfolioLeaderboard entries={entries as PortfolioLeaderboardEntry[]} type={leadType} onSortChange={handleSortChange} />
+                    <PortfolioLeaderboard entries={entries as PortfolioLeaderboardEntry[]} />
                 ) : (
                     <Leaderboard entries={entries as LeaderboardEntry[]} type={leadType} onSortChange={handleSortChange} />
                 )}

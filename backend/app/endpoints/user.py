@@ -5,54 +5,129 @@ from sqlalchemy import and_
 
 from app.core.token import verify_token
 from app.db.database import get_db
-from app.models.db_models import User, Player, PlayerData, Portfolio, PortfolioPlayer, UserLeagues
-from app.models.models import UserPublic, UserSelf
+from app.models.db_models import User, Player, PlayerData, Portfolio, PortfolioPlayer, UserLeagues, League, PortfolioHold, PortfolioHistory as DBPortfolioHistory, Transaction as DBTransaction, Favorite
+from app.models.models import UserProfile, Player as PlayerModel, Holds, Transaction as TransactionModel, \
+    PortfolioHistory, FavoritesEntry, LeagueWithPortfolio, League as LeagueModel, Portfolio as PortfolioModel, \
+    UserPublic, UserSelf
 from app.models.pricing_model import price_model
+from app.utils.portfolio_change import portfolio_change
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='login')  # Adjust tokenUrl if necessary
 router = APIRouter()
 
-@router.get('/users/{username}', response_model=UserPublic)
+@router.get('/users/{username}', response_model=UserProfile)
 async def get_user(username: str, db: Session = Depends(get_db)):
     user_data = db.query(User).filter(User.username == username).first()
     if not user_data:
         raise HTTPException(status_code=404, detail='User not found')
 
-    user_league = db.query(UserLeagues).filter(
-        and_(UserLeagues.user_id == user_data.id, UserLeagues.league_id == user_data.current_league_id)
-    ).first()
+    user_leagues = db.query(UserLeagues).filter(UserLeagues.user_id == user_data.id).all()
+    if not user_leagues:
+        raise HTTPException(status_code=404, detail='User not associated with any league')
 
-    if not user_league:
-        raise HTTPException(status_code=404, detail='User not associated with current league')
+    leagues_with_portfolio = []
+    for user_league in user_leagues:
+        league_data = db.query(League).filter(League.id == user_league.league_id).first()
 
-    portfolio = db.query(Portfolio).filter(Portfolio.id == user_league.portfolio_id).first()
-    if not portfolio:
-        portfolio = Portfolio(current_value=0, id=user_league.portfolio_id)  # Create a default empty portfolio
+        portfolio = db.query(Portfolio).filter(Portfolio.id == user_league.portfolio_id).first()
+        if not portfolio:
+            portfolio = Portfolio(current_value=0, id=user_league.portfolio_id)  # Create a default empty portfolio
 
-    portfolio_players = portfolio.portfolio_players if portfolio else []
+        portfolio_players = db.query(PortfolioPlayer).filter(PortfolioPlayer.portfolio_id == portfolio.id).all()
+        players = {}
+        for pp in portfolio_players:
+            player = db.query(Player).filter(Player.id == pp.player_id).first()
+            if player:
+                player_data = db.query(PlayerData).filter(PlayerData.player_id == player.id).order_by(PlayerData.date.desc()).first()
+                current_price = price_model(player_data.league_points) if player_data else pp.purchase_price
+                players[player.game_name] = PlayerModel(
+                    name=player.game_name,
+                    tagLine=player.tag_line,
+                    current_price=current_price,
+                    purchase_price=pp.purchase_price,
+                    shares=pp.shares
+                )
 
-    portfolio_dict = {}
-    for player_data in portfolio_players:
-        player = player_data.player
-        latest_player_data = db.query(PlayerData).filter(PlayerData.player_id == player.id).order_by(PlayerData.date.desc()).first()
-        if latest_player_data:
-            current_price = price_model(latest_player_data.league_points)
-            portfolio_dict[player.game_name] = {
-                'name': player.game_name,
-                'tagLine': player.tag_line,
-                'current_price': current_price,
-                'purchase_price': player_data.purchase_price,
-                'shares': player_data.shares
-            }
+        holds = db.query(PortfolioHold).filter(PortfolioHold.portfolio_id == portfolio.id).all()
+        holds_list = [
+            Holds(
+                id=hold.id,
+                gameName=hold.player.game_name,
+                shares=hold.shares,
+                hold_deadline=hold.hold_deadline
+            )
+            for hold in holds
+        ]
 
-    return UserPublic(
+        portfolio_history = db.query(DBPortfolioHistory).filter(DBPortfolioHistory.portfolio_id == portfolio.id).all()
+        portfolio_history_list = [
+            PortfolioHistory(
+                id=history.id,
+                value=history.value,
+                date=history.date
+            )
+            for history in portfolio_history
+        ]
+
+        transactions = db.query(DBTransaction).filter(DBTransaction.portfolio_id == portfolio.id).all()
+        transactions_list = [
+            TransactionModel(
+                id=transaction.id,
+                type=transaction.type,
+                gameName=transaction.player.game_name,
+                shares=transaction.shares,
+                price=float(transaction.price),
+                transaction_date=transaction.transaction_date
+            )
+            for transaction in transactions
+        ]
+
+        league_with_portfolio = LeagueWithPortfolio(
+            league=LeagueModel(
+                id=league_data.id,
+                name=league_data.name,
+                start_date=league_data.start_date,
+                end_date=league_data.end_date,
+                created_by=league_data.created_by
+            ),
+            portfolio=PortfolioModel(
+                id=portfolio.id,
+                players=players,
+                holds=holds_list
+            ),
+            portfolio_history=portfolio_history_list,
+            transactions=transactions_list,
+            one_day_change=0.0,  # Compute this value if needed
+            three_day_change=0.0,  # Compute this value if needed
+            balance=user_league.balance,
+            rank=user_league.rank
+        )
+
+        leagues_with_portfolio.append(league_with_portfolio)
+
+    favorites = db.query(Favorite).filter(Favorite.user_id == user_data.id).all()
+    favorites_list = [
+        FavoritesEntry(
+            name=favorite.player.game_name,
+            current_price=price_model(db.query(PlayerData).filter(PlayerData.player_id == favorite.player.id).order_by(PlayerData.date.desc()).first().league_points),
+            eight_hour_change=favorite.player.delta_8h,
+            one_day_change=favorite.player.delta_24h,
+            three_day_change=favorite.player.delta_72h,
+            tag_line=favorite.player.tag_line
+        )
+        for favorite in favorites
+    ]
+
+    user_profile = UserProfile(
         username=user_data.username,
-        portfolio={'players': portfolio_dict, 'holds': []},
-        transactions=getattr(user_data, 'transactions', []),
-        one_day_change=0.0,  # Compute this value if needed
-        three_day_change=0.0,  # Compute this value if needed
-        portfolio_history=getattr(user_data, 'portfolio_history', [])
+        leagues=leagues_with_portfolio,
+        favorites=favorites_list,
+        current_league_id=user_data.current_league_id
     )
+
+    user_profile = portfolio_change(user_profile)
+
+    return user_profile
 
 
 @router.get('/settings', response_model=UserSelf)
@@ -64,9 +139,6 @@ async def read_profile(token: str = Depends(oauth2_scheme), db: Session = Depend
 
     return UserSelf(
         username=user_data.username,
-        one_day_change=0.0,  # Compute this value if needed
-        three_day_change=0.0,  # Compute this value if needed
-        favorites=getattr(user_data, 'favorites', []),
+        password=user_data.password,
         date_registered=user_data.date_registered,
-        current_league_id=user_data.current_league_id  # Ensure current_league_id is included
     )

@@ -25,10 +25,15 @@ interface LeaderboardResponse {
 }
 
 // Function to fetch leaderboard data
-export async function fetchLeaderboardData(leadType: string, page: number = 0, limit: number = 100): Promise<LeaderboardResponse> {
+export async function fetchLeaderboardData(leadType: string, token: string | null, page: number = 0, limit: number = 100): Promise<LeaderboardResponse> {
   const url: string = `${backendUrl}/leaderboard/${leadType}?limit=${limit}&page=${page}`;
   try {
-    const response: Response = await fetch(url);
+    const response: Response = await fetch(url, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
     if (!response.ok) {
       throw new Error('Network response was not ok');
     }

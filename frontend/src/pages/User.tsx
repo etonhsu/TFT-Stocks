@@ -1,31 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Portfolio, Player } from '../components/dashboard/Portfolio.tsx';
-import { Transaction } from '../components/transactions/RecentTransactions.tsx';
-import { UserTransactionsContainer } from "../containers/user/UserTransactionsContainer.tsx";
-import { MainContent } from "../containers/general/MainContent.tsx";
-import { Text } from "../containers/dashboard/TextStyle.tsx";
+import { Portfolio } from '../components/dashboard/Portfolio';
+import { UserTransactionsContainer } from "../containers/user/UserTransactionsContainer";
+import { MainContent } from "../containers/general/MainContent";
+import { Text } from "../containers/dashboard/TextStyle";
 import styled from "styled-components";
-import { UserChart } from "../components/user/UserChart.tsx";
-import { PortfolioContainer } from "../containers/dashboard/PortfolioContainer.tsx";
-import { PortfolioHistoryData } from "./Dashboard.tsx";
+import { UserChart } from "../components/user/UserChart";
+import { PortfolioContainer } from "../containers/dashboard/PortfolioContainer";
+import {UserSummary} from "./Dashboard";
 import {
     UserAccountColumn,
     UserAccountContainer,
     UserAccountDetailsContainer
-} from "../containers/user/UserContainer.tsx";
-import { formatCurrency } from "../utils/CurrencyFormatter.tsx";
+} from "../containers/user/UserContainer";
+import { formatCurrency } from "../utils/CurrencyFormatter";
 
-// Define interfaces for the expected data structures
-interface User {
-    username: string;
-    portfolio?: {
-        players: { [key: string]: Player; }; // Define the player type based on your data structure
-    };
-    transactions: Transaction[]; // Define the Transaction type based on your data structure
-    portfolio_history: PortfolioHistoryData[];
-    rank: number;
-}
 
 const TextContainer = styled.div`
   display: flex;
@@ -47,7 +36,7 @@ const AccountValue = styled.h2`
 
 export const UserProfile: React.FC = () => {
     const { username } = useParams<{ username: string }>(); // Specify the type for useParams
-    const [user, setUser] = useState<User | null>(null);
+    const [userSummary, setUserSummary] = useState<UserSummary | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string>('');
     const backendUrl = import.meta.env.VITE_BACKEND_URL;
@@ -58,7 +47,7 @@ export const UserProfile: React.FC = () => {
                 const response = await fetch(`${backendUrl}/users/${username}`);
                 const data = await response.json();
                 if (response.ok) {
-                    setUser(data);
+                    setUserSummary(data);
                 } else {
                     throw new Error(data.detail || 'Failed to fetch user data');
                 }
@@ -72,42 +61,48 @@ export const UserProfile: React.FC = () => {
         fetchUserData();
     }, [backendUrl, username]);
 
-    const total = user && user.portfolio_history.length > 0 ? user.portfolio_history[user.portfolio_history.length - 1].value : undefined;
-
     if (loading) {
         return (<MainContent className="mainContentContainer">Loading...</MainContent>);
     }
     if (error) {
         return (<MainContent className="mainContentContainer">Error: No data available.</MainContent>);
     }
-    if (!user) return <MainContent className="mainContentContainer">No user data available.</MainContent>;
+    if (!userSummary) return <MainContent className="mainContentContainer">No user data available.</MainContent>;
+
+    const currentLeague = userSummary.leagues.find(league => league.league.id === userSummary.current_league_id);
+
+    if (!currentLeague) {
+        return (<MainContent className="mainContentContainer">Error: Current league not found.</MainContent>);
+    }
+
+    const total = currentLeague.portfolio_history.length > 0 ? currentLeague.portfolio_history[currentLeague.portfolio_history.length - 1].value : undefined;
 
     return (
         <MainContent>
             <TextContainer>
-                <Text size="52px" weight="bold" color='#EAEAEA' padding='10px 5px 0px 5px'>{user.username}</Text>
+                <Text size="52px" weight="bold" color='#EAEAEA' padding='10px 5px 0px 5px'>{userSummary.username}</Text>
                 <Text size="22px" weight="bold" color='#EAEAEA' padding='0 0 10px 7px'>
-                    {user.rank === 0 ? 'Rank n/a' : `Rank #${user.rank}`}
+                    {currentLeague.rank === 0 ? 'Rank n/a' : `Rank #${currentLeague.rank}`}
                 </Text>
             </TextContainer>
             <UserAccountContainer>
                 <UserAccountColumn>
                     <UserAccountDetailsContainer label={"Overview"}>
                         <ValueLabel>Account Value: </ValueLabel>
-                        <AccountValue>{total != undefined ? formatCurrency(total, 2) : 'N/A'}</AccountValue>
+                        <AccountValue>{total !== undefined ? formatCurrency(total, 2) : 'N/A'}</AccountValue>
                     </UserAccountDetailsContainer>
                     <UserTransactionsContainer label={"Recent Transactions"}>
-                        {user.transactions.slice().reverse().slice(0, 7).map((transaction, index) => (
+                        {currentLeague.transactions.slice().reverse().slice(0, 7).map((transaction, index) => (
                             <div key={index}>
                                 <p>{transaction.type} | {transaction.gameName} | {transaction.shares} Shares</p>
                             </div>
                         ))}
                     </UserTransactionsContainer>
                 </UserAccountColumn>
-                <UserChart portfolioHistory={user.portfolio_history} />
+                <UserChart portfolioHistory={currentLeague.portfolio_history} />
             </UserAccountContainer>
             <PortfolioContainer label={'Portfolio'}>
-                {user.portfolio?.players && <Portfolio players={user.portfolio.players} />}
+                {currentLeague.portfolio.players && <Portfolio players={currentLeague.portfolio.players} />}
             </PortfolioContainer>
         </MainContent>
     );

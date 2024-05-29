@@ -18,7 +18,11 @@ export const HeaderBar = styled.header`
 
 export const HeaderRight = styled.div`
     display: flex;
-    margin-right: 17vw;
+    margin-right: 18vw;
+`
+
+export const HeaderLeft = styled.div`
+    display: flex;
 `
 
 

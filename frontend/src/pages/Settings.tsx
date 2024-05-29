@@ -10,12 +10,8 @@ import {useAuth} from "../utils/Authentication.tsx";
 
 interface UserSelf {
   username: string;
-  one_day_change: number;
-  three_day_change: number;
-  rank: number;
-  balance: number;
+  password: string; // Optional in case it's needed somewhere securely
   date_registered: string;
-  password?: string; // Optional in case it's needed somewhere securely
 }
 
 const formatDate = (dateString: string | undefined) => {

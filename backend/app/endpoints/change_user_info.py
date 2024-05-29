@@ -14,7 +14,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 # OAuth2 setup (assuming you have token-based authentication in place)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-@router.post("/change_username")
+@router.put("/change_username")
 async def change_username(request: UsernameChangeRequest, user_data: UserSelf = Depends(get_user_from_token), db: Session = Depends(get_db)):
     username_lower = request.newUsername.lower()
     # Find if new username already exists
@@ -31,7 +31,7 @@ async def change_username(request: UsernameChangeRequest, user_data: UserSelf = 
 
     return {"message": "Username updated successfully"}
 
-@router.post("/change_password")
+@router.put("/change_password")
 async def change_password(passwords: PasswordUpdateModel = Body(...), user_data: UserSelf = Depends(get_user_from_token), db: Session = Depends(get_db)):
     user = db.query(User).filter(User.username == user_data.username).first()
     if not user:

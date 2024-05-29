@@ -7,6 +7,12 @@ interface ModalContextType {
     setRegisterOpen: (open: boolean) => void;
     isSettingsOpen: boolean;
     setSettingsModalOpen: (open: boolean) => void;
+    isLeagueEditOpen: boolean;
+    setLeagueEditOpen: (open: boolean) => void;
+    isCreateLeagueOpen: boolean;
+    setCreateLeagueOpen: (open: boolean) => void;
+    isJoinLeagueOpen: boolean;
+    setJoinLeagueOpen: (open: boolean) => void;
 }
 
 interface AuthProviderProps {
@@ -19,7 +25,13 @@ const defaultModalValues: ModalContextType = {
     isRegisterOpen: false,
     setRegisterOpen: () => {},
     isSettingsOpen: false,
-    setSettingsModalOpen: () => {}
+    setSettingsModalOpen: () => {},
+    isLeagueEditOpen: false,
+    setLeagueEditOpen: () => {},
+    isCreateLeagueOpen: false,
+    setCreateLeagueOpen: () => {},
+    isJoinLeagueOpen: false,
+    setJoinLeagueOpen: () => {},
 };
 
 const ModalContext = createContext<ModalContextType>(defaultModalValues);
@@ -30,6 +42,9 @@ export function ModalProvider({ children }: AuthProviderProps) {
     const [isLoginOpen, setLoginOpen] = useState(false);
     const [isRegisterOpen, setRegisterOpen] = useState(false);
     const [isSettingsOpen, setSettingsModalOpen] = useState(false);
+    const [isLeagueEditOpen, setLeagueEditOpen] = useState(false);
+    const [isCreateLeagueOpen, setCreateLeagueOpen] = useState(false);
+    const [isJoinLeagueOpen, setJoinLeagueOpen] = useState(false);
 
     return (
         <ModalContext.Provider value={{
@@ -38,9 +53,16 @@ export function ModalProvider({ children }: AuthProviderProps) {
             isRegisterOpen,
             setRegisterOpen,
             isSettingsOpen,
-            setSettingsModalOpen // Ensure this is included everywhere it's needed
+            setSettingsModalOpen, // Ensure this is included everywhere it's needed
+            isLeagueEditOpen,
+            setLeagueEditOpen,
+            isCreateLeagueOpen,
+            setCreateLeagueOpen,
+            isJoinLeagueOpen,
+            setJoinLeagueOpen,
+
         }}>
             {children}
         </ModalContext.Provider>
     );
-};
+}
