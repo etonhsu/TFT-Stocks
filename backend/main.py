@@ -18,6 +18,7 @@ app.add_middleware(
         "https://www.tftstocks.com",
         "https://main--tftstocksite.netlify.app",
         "http://localhost:4173",
+        "http://ec2-54-187-157-154.us-west-2.compute.amazonaws.com:8000/"
     ],
     allow_credentials=True,
     allow_methods=["*"],  # Allowing all methods
