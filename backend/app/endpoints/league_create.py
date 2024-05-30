@@ -5,6 +5,7 @@ from sqlalchemy import func
 from app.db.database import get_db
 from app.models.db_models import League, User, Portfolio, UserLeagues
 from app.core.token import get_user_from_token
+from app.models.models import UserProfile
 
 router = APIRouter()
 
@@ -14,7 +15,7 @@ async def create_league(
     length: int = Body(...),
     max_players: int = Body(None),
     password: str = Body(None),
-    current_user: User = Depends(get_user_from_token),
+    current_user: UserProfile = Depends(get_user_from_token),
     db: Session = Depends(get_db)
 ):
     try:

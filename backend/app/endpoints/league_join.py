@@ -3,13 +3,13 @@ from sqlalchemy.orm import Session
 
 from app.db.database import get_db
 from app.models.db_models import User, UserLeagues, League, Portfolio
-from app.models.models import LeagueJoinRequest
+from app.models.models import LeagueJoinRequest, UserProfile
 from app.core.token import get_user_from_token
 
 router = APIRouter()
 
 @router.post("/join_league")
-async def join_league(request: LeagueJoinRequest, current_user: User = Depends(get_user_from_token), db: Session = Depends(get_db)):
+async def join_league(request: LeagueJoinRequest, current_user: UserProfile = Depends(get_user_from_token), db: Session = Depends(get_db)):
     # Fetch the user by their username to get the user ID
     user = db.query(User).filter(User.username == current_user.username).first()
     if not user:

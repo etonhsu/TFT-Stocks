@@ -4,13 +4,13 @@ from typing import List
 
 from app.db.database import get_db
 from app.models.db_models import User, UserLeagues, League
-from app.models.models import LeagueOverview
+from app.models.models import LeagueOverview, UserProfile
 from app.core.token import get_user_from_token
 
 router = APIRouter()
 
 @router.get("/leagues", response_model=List[LeagueOverview])
-async def get_leagues(current_user: User = Depends(get_user_from_token), db: Session = Depends(get_db)):
+async def get_leagues(current_user: UserProfile = Depends(get_user_from_token), db: Session = Depends(get_db)):
     try:
         # Fetch the user by their username to get the user ID
         user = db.query(User).filter(User.username == current_user.username).first()

@@ -5,13 +5,13 @@ from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.models.db_models import User, UserLeagues, League, Portfolio
 from app.core.token import get_user_from_token
-from app.models.models import LeagueDropdown
+from app.models.models import LeagueDropdown, UserProfile
 
 router = APIRouter()
 
 
 @router.get("/user_leagues", response_model=list[LeagueDropdown])
-async def get_user_leagues(current_user: User = Depends(get_user_from_token), db: Session = Depends(get_db)):
+async def get_user_leagues(current_user: UserProfile = Depends(get_user_from_token), db: Session = Depends(get_db)):
     user = db.query(User).filter(User.username == current_user.username).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")

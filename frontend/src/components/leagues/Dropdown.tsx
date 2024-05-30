@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import styled from 'styled-components';
-import { useAuth } from '../../utils/Authentication';
 import axios from 'axios';
+import { useAuth } from '../../utils/Authentication';
 import { FaSortDown } from 'react-icons/fa';
 
 interface LeagueDropdownProps {
@@ -75,23 +75,6 @@ export const LeagueDropdown: React.FC<LeagueDropdownProps> = ({ currentLeagueId,
     const dropdownRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        const fetchCurrentLeague = async () => {
-            try {
-                const response = await axios.get<LeagueDropdownItem>(`${backendUrl}/league_current`, {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                });
-                setCurrentLeague(response.data);
-            } catch (error) {
-                console.error('Error fetching current league:', error);
-            }
-        };
-
-        fetchCurrentLeague();
-    }, [backendUrl, token]);
-
-    useEffect(() => {
         const fetchUserLeagues = async () => {
             try {
                 const response = await axios.get<LeagueDropdownItem[]>(`${backendUrl}/user_leagues`, {
@@ -101,16 +84,21 @@ export const LeagueDropdown: React.FC<LeagueDropdownProps> = ({ currentLeagueId,
                 });
                 const userLeagues = response.data;
                 setLeagues(userLeagues);
-
-                const current = userLeagues.find(league => league.league_id === currentLeagueId) || userLeagues[0] || null;
+                const currentLeagueResponse = await axios.get<{ current_league_id: number }>(`${backendUrl}/league_current`, {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+                const current = userLeagues.find(league => league.league_id === currentLeagueResponse.data.current_league_id) || userLeagues[0] || null;
                 setCurrentLeague(current);
+                setCurrentLeagueId(current?.league_id || 0);
             } catch (error) {
                 console.error('Error fetching user leagues:', error);
             }
         };
 
         fetchUserLeagues();
-    }, [backendUrl, token, currentLeagueId]);
+    }, [backendUrl, token, currentLeagueId, setCurrentLeagueId]);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
