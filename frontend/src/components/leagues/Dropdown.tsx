@@ -120,7 +120,7 @@ export const LeagueDropdown: React.FC<LeagueDropdownProps> = ({ currentLeagueId,
             setCurrentLeagueId(leagueId);
             const selectedLeague = leagues.find(league => league.league_id === leagueId) || null;
             setCurrentLeague(selectedLeague);
-            window.location.reload(); // Refresh the page after changing the league
+            // window.location.reload(); // Refresh the page after changing the league
         } catch (error) {
             console.error('Error updating current league:', error);
         }
