@@ -3,7 +3,7 @@ from starlette.middleware.cors import CORSMiddleware
 
 from app.endpoints import player, leaderboard, login, register, user, search, transaction, dashboard, \
     transaction_history, top_leaderboard, favorites, favorites_toggle, change_user_info, league_overview, league_create, \
-    league_join, league_update, league_search, league_dropdown, league_edit
+    league_join, league_update, league_search, league_dropdown, league_edit, league_current
 
 app = FastAPI(title='TFT Stocks API', version='1.0', description='API for a TFT stock market simulation')
 
@@ -47,6 +47,8 @@ app.include_router(league_update.router)
 app.include_router(league_search.router)
 app.include_router(league_dropdown.router)
 app.include_router(league_edit.router)
+app.include_router(league_current.router)
+
 
 
 # Optional: Add any global middleware, event handlers, or exception handlers

@@ -75,6 +75,23 @@ export const LeagueDropdown: React.FC<LeagueDropdownProps> = ({ currentLeagueId,
     const dropdownRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
+        const fetchCurrentLeague = async () => {
+            try {
+                const response = await axios.get<LeagueDropdownItem>(`${backendUrl}/league_current`, {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+                setCurrentLeague(response.data);
+            } catch (error) {
+                console.error('Error fetching current league:', error);
+            }
+        };
+
+        fetchCurrentLeague();
+    }, [backendUrl, token]);
+
+    useEffect(() => {
         const fetchUserLeagues = async () => {
             try {
                 const response = await axios.get<LeagueDropdownItem[]>(`${backendUrl}/user_leagues`, {
