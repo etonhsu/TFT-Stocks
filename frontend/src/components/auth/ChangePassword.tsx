@@ -102,7 +102,7 @@ export const ChangePassword: React.FC<ChangePasswordProps> = ({ onClose }) => {
         }
 
         try {
-            const response = await axios.post(`${backendUrl}/change_password`, {
+            const response = await axios.put(`${backendUrl}/change_password`, {
                 oldPassword,
                 newPassword
             }, {

@@ -100,7 +100,7 @@ export const ChangeUsername: React.FC<ChangeUsernameProps> = ({ onClose }) => {
         }
 
         try {
-            const response = await axios.post(`${backendUrl}/change_username`, { newUsername }, {
+            const response = await axios.put(`${backendUrl}/change_username`, { newUsername }, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                     'Content-Type': 'application/json'
