@@ -58,13 +58,10 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, text }) => {
 };
 
 const currentNotification = {
-  message:  "Hey everyone, I know it's been a while, but I'm excited to be able to introduce the new and improved version of TFT " +
-            "Stocks! This version fixes a lot of the bugs that were present before, as well as adds the new leagues feature! " +
-            "Currently all users are enrolled in 2 leagues, a set league and a monthly league. I am going to work with riot to see if I'm " +
-            "allowed to give prizes for the winners of each league as well! On top of that, you can create a custom league to compete with friends. " +
-            "I'm sure there will be issues with leagues the same way there were with transactions before, so please bear with me, but I hope " +
-            "you all enjoy the site, and thank you all so much for the support!",
-  version: 8
+  message:  "Hi everyone, I just made the switch to a new database that will help with the efficiency of the site. I tried to do it at a time where the least number " +
+            "of people would be affected, but I'm sure a few transactions were lost during transfer. If you think you were affected by the change, please message me on " +
+            "discord or twitter, and I'll work with you to make sure everything's right. I'm sorry for the inconvenience, and thank you for the continued support!",
+  version: 9
 };
 
 export const ButtonWithModal: React.FC = () => {
