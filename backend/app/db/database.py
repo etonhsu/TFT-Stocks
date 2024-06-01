@@ -4,7 +4,7 @@ from sqlalchemy.orm import sessionmaker
 from contextlib import contextmanager
 
 # Get the database URL from your secrets manager
-DATABASE_URL = "postgresql+pg8000://etonhsu:K27AvlaPA6GYZ8NQ2tvt@tft-stocks.c9ooisyqkieb.us-west-2.rds.amazonaws.com:5432/tft-stocks"
+DATABASE_URL = "postgresql+pg8000://etonhsu:K27AvlaPA6GYZ8NQ2tvt@tft-stocks-2b.c9ooisyqkieb.us-west-2.rds.amazonaws.com:5432/tft-stocks"
 
 # Create the SQLAlchemy engine
 engine = create_engine(DATABASE_URL)
