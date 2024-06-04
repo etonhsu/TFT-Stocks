@@ -10,7 +10,7 @@ import { useAuth } from "../utils/Authentication";
 
 interface FavoriteData {
     name: string;
-    tagLine: string;
+    tag_line: string;
     current_price: number;
     eight_hour_change: number;
     one_day_change: number;
@@ -88,7 +88,7 @@ export const Favorites: React.FC = () => {
                         {favoritesSummary.map((favorite, index) => (
                             <StyledRow key={index}>
                                 <StyledCell>
-                                    <StyledPlayerLink gameName={favorite.name} tagLine={favorite.tagLine} />
+                                    <StyledPlayerLink gameName={favorite.name} tagLine={favorite.tag_line} />
                                 </StyledCell>
                                 <StyledCell>{formatCurrency(favorite.current_price, 2)}</StyledCell>
                                 <StyledCell>{formatCurrency(favorite.eight_hour_change, 1)}</StyledCell>
