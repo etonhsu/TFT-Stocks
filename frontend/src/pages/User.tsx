@@ -7,14 +7,22 @@ import { Text } from "../containers/dashboard/TextStyle";
 import styled from "styled-components";
 import { UserChart } from "../components/user/UserChart";
 import { PortfolioContainer } from "../containers/dashboard/PortfolioContainer";
-import {UserSummary} from "./Dashboard";
 import {
     UserAccountColumn,
     UserAccountContainer,
     UserAccountDetailsContainer
 } from "../containers/user/UserContainer";
 import { formatCurrency } from "../utils/CurrencyFormatter";
+import { useAuth } from '../utils/Authentication';
+import {FavoritesEntry, LeagueWithPortfolio} from "./Dashboard.tsx"; // Import useAuth
 
+interface UserSummary {
+    username: string;
+    leagues: LeagueWithPortfolio[];
+    favorites: FavoritesEntry[];
+    current_league_id: number;
+    league_id: number;
+}
 
 const TextContainer = styled.div`
   display: flex;
@@ -39,12 +47,17 @@ export const UserProfile: React.FC = () => {
     const [userSummary, setUserSummary] = useState<UserSummary | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string>('');
+    const { token } = useAuth(); // Use useAuth to get the token
     const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
     useEffect(() => {
         async function fetchUserData() {
             try {
-                const response = await fetch(`${backendUrl}/users/${username}`);
+                const response = await fetch(`${backendUrl}/users/${username}`, {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
                 const data = await response.json();
                 if (response.ok) {
                     setUserSummary(data);
@@ -59,7 +72,7 @@ export const UserProfile: React.FC = () => {
         }
 
         fetchUserData();
-    }, [backendUrl, username]);
+    }, [backendUrl, username, token]);
 
     if (loading) {
         return (<MainContent className="mainContentContainer">Loading...</MainContent>);
@@ -69,20 +82,26 @@ export const UserProfile: React.FC = () => {
     }
     if (!userSummary) return <MainContent className="mainContentContainer">No user data available.</MainContent>;
 
-    const currentLeague = userSummary.leagues.find(league => league.league.id === userSummary.current_league_id);
+    // Use league_id instead of current_league_id to find the correct league to display
+    let displayedLeague = userSummary.leagues.find(league => league.league.id === userSummary.league_id);
 
-    if (!currentLeague) {
-        return (<MainContent className="mainContentContainer">Error: Current league not found.</MainContent>);
+    if (!displayedLeague) {
+        // Default to the set league (league_id = 2) if the displayed league is not found
+        displayedLeague = userSummary.leagues.find(league => league.league.id === 2);
     }
 
-    const total = currentLeague.portfolio_history.length > 0 ? currentLeague.portfolio_history[currentLeague.portfolio_history.length - 1].value : undefined;
+    if (!displayedLeague) {
+        return (<MainContent className="mainContentContainer">Error: Displayed league not found.</MainContent>);
+    }
+
+    const total = displayedLeague.portfolio_history.length > 0 ? displayedLeague.portfolio_history[displayedLeague.portfolio_history.length - 1].value : undefined;
 
     return (
         <MainContent>
             <TextContainer>
                 <Text size="52px" weight="bold" color='#EAEAEA' padding='10px 5px 0px 5px'>{userSummary.username}</Text>
                 <Text size="22px" weight="bold" color='#EAEAEA' padding='0 0 10px 7px'>
-                    {currentLeague.rank === 0 ? 'Rank n/a' : `Rank #${currentLeague.rank}`}
+                    {displayedLeague.rank === 0 ? 'Rank n/a' : `Rank #${displayedLeague.rank}`}
                 </Text>
             </TextContainer>
             <UserAccountContainer>
@@ -92,17 +111,17 @@ export const UserProfile: React.FC = () => {
                         <AccountValue>{total !== undefined ? formatCurrency(total, 2) : 'N/A'}</AccountValue>
                     </UserAccountDetailsContainer>
                     <UserTransactionsContainer label={"Recent Transactions"}>
-                        {currentLeague.transactions.slice().reverse().slice(0, 7).map((transaction, index) => (
+                        {displayedLeague.transactions.slice().reverse().slice(0, 7).map((transaction, index) => (
                             <div key={index}>
                                 <p>{transaction.type} | {transaction.gameName} | {transaction.shares} Shares</p>
                             </div>
                         ))}
                     </UserTransactionsContainer>
                 </UserAccountColumn>
-                <UserChart portfolioHistory={currentLeague.portfolio_history} />
+                <UserChart portfolioHistory={displayedLeague.portfolio_history} />
             </UserAccountContainer>
             <PortfolioContainer label={'Portfolio'}>
-                {currentLeague.portfolio.players && <Portfolio players={currentLeague.portfolio.players} />}
+                {displayedLeague.portfolio.players && <Portfolio players={displayedLeague.portfolio.players} />}
             </PortfolioContainer>
         </MainContent>
     );

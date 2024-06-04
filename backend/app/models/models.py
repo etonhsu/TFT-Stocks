@@ -92,6 +92,10 @@ class UserProfile(UserPublic):
     current_league_id: int
 
 
+class UserProfileView(UserProfile):
+    league_id: int
+
+
 class UserSelf(UserPublic):
     date_registered: datetime
     password: Optional[SecretStr] = None
