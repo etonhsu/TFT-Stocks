@@ -41,8 +41,9 @@ export const Favorites: React.FC = () => {
                 });
                 setFavoritesSummary(response.data.favorites);  // Assuming response.data.favorites is the correct path
             } catch (error) {
+                console.error('Error fetching data: ', error);
+                setLoading(false);
                 navigate('/');
-                console.error('Error fetching data:', error);
                 if (axios.isAxiosError(error) && error.response?.status === 401) {
                     navigate('/');
                 }

@@ -106,12 +106,14 @@ export const Leagues: React.FC = () => {
         const data = response.data;
         setLeagues(data);
       } catch (error) {
-        setError('Error: Failed to fetch leagues');
-        if (axios.isAxiosError(error) && error.response?.status === 401) {
+          setError('Error: Failed to fetch leagues');
+          setLoading(false);
           navigate('/');
-        }
+          if (axios.isAxiosError(error) && error.response?.status === 401) {
+            navigate('/');
+          }
       } finally {
-        setLoading(false);
+          setLoading(false);
       }
     };
 

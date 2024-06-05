@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import {useNavigate, useParams} from 'react-router-dom';
 import { TransactionComponent } from '../components/transactions/TransactionComponent';
 import { PlayerChart } from '../components/player/PlayerChart';
 import { MainContent } from "../containers/general/MainContent";
@@ -63,6 +63,7 @@ export function PlayerInfo() {
     const [playerData, setPlayerData] = useState<PlayerData | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string>('');
+    const navigate = useNavigate();
     const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
     useEffect(() => {
@@ -86,6 +87,8 @@ export function PlayerInfo() {
         } catch (err) {
             console.error('Error fetching player data:', err);
             setError('Failed to load player data');
+            setLoading(false);
+            navigate('/');
         } finally {
             setLoading(false);
         }

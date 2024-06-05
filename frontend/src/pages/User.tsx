@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import {useNavigate, useParams} from 'react-router-dom';
 import { Portfolio } from '../components/dashboard/Portfolio';
 import { UserTransactionsContainer } from "../containers/user/UserTransactionsContainer";
 import { MainContent } from "../containers/general/MainContent";
@@ -48,6 +48,7 @@ export const UserProfile: React.FC = () => {
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string>('');
     const { token } = useAuth(); // Use useAuth to get the token
+    const navigate = useNavigate();
     const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
     useEffect(() => {
@@ -66,6 +67,8 @@ export const UserProfile: React.FC = () => {
                 }
             } catch (error) {
                 setError('Failed to load user data');
+                setLoading(false);
+                navigate('/');
             } finally {
                 setLoading(false);
             }

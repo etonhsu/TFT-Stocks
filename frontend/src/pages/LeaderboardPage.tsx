@@ -10,6 +10,7 @@ import {
 import styled from "styled-components";
 import { PortfolioLeaderboard } from "../components/leaderboard/PortfolioLeaderboard.tsx";
 import { useAuth } from '../utils/Authentication.tsx';
+import {useNavigate} from "react-router-dom";
 
 export const StyledButton = styled.button`
     display: flex;
@@ -62,6 +63,7 @@ export const LeaderboardPage = () => {
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [page, setPage] = useState<number>(0);
+    const navigate = useNavigate();
 
     useEffect(() => {
         const fetchData = async () => {
@@ -74,6 +76,7 @@ export const LeaderboardPage = () => {
                 console.error('Fetch error:', error);
                 setIsLoading(false);
                 setError('An error occurred while fetching leaderboard data.');
+                navigate('/');
             }
         };
 
