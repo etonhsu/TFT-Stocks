@@ -135,3 +135,17 @@ async def get_user(username: str, current_user: UserProfile = Depends(get_user_f
     user_profile = portfolio_change(user_profile)
 
     return user_profile
+
+
+@router.get('/settings', response_model=UserSelf)
+async def read_profile(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    username = verify_token(token, credentials_exception=HTTPException(status_code=401, detail='Invalid token'))
+    user_data = db.query(User).filter(User.username == username).first()
+    if not user_data:
+        raise HTTPException(status_code=404, detail='User not found')
+
+    return UserSelf(
+        username=user_data.username,
+        password=user_data.password,
+        date_registered=user_data.date_registered,
+    )
