@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, Integer, String, Date, DateTime, ForeignKey, DECIMAL
+from sqlalchemy import create_engine, Column, Integer, String, Date, DateTime, ForeignKey, DECIMAL, CheckConstraint
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
 
@@ -14,6 +14,7 @@ class User(Base):
 
     user_leagues = relationship('UserLeagues', back_populates='user')
     favorites = relationship('Favorite', back_populates='user')
+    future_sights = relationship('FutureSight', back_populates='user')
 
 
 class Player(Base):
@@ -143,3 +144,66 @@ class Favorite(Base):
 
     user = relationship('User', back_populates='favorites')
     player = relationship('Player', back_populates='favorites')
+
+
+class FutureSight(Base):
+    __tablename__ = 'future_sight'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey('users.id'))
+    current_points = Column(DECIMAL)
+
+    user = relationship('User', back_populates='future_sights')
+    picks = relationship('FutureSightPick', back_populates='future_sight')
+    questions = relationship('FutureSightQuestion', back_populates='future_sight')
+
+
+class FutureSightPick(Base):
+    __tablename__ = 'future_sight_picks'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    future_sight_id = Column(Integer, ForeignKey('future_sight.id'))
+    player_id = Column(Integer, ForeignKey('players.id'))
+    rank = Column(Integer)
+
+    future_sight = relationship('FutureSight', back_populates='picks')
+    player = relationship('Player')
+
+
+class FutureSightQuestion(Base):
+    __tablename__ = 'future_sight_questions'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    future_sight_id = Column(Integer, ForeignKey('future_sight.id'))
+    question = Column(String)
+    answer = Column(String)
+
+    future_sight = relationship('FutureSight', back_populates='questions')
+
+
+class RegionalsNonna(Base):
+    __tablename__ = 'regionals_nonna'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    game_name = Column(String, nullable=False)
+    tag_line = Column(String, nullable=False)
+    puuid = Column(String, nullable=True)
+    summoner_id = Column(String, nullable=True)
+    region = Column(String, nullable=False)
+    delta_8h = Column(DECIMAL, nullable=True)
+    delta_24h = Column(DECIMAL, nullable=True)
+    delta_72h = Column(DECIMAL, nullable=True)
+
+
+class RegionalsData(Base):
+    __tablename__ = 'regionals_data'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    player_id = Column(Integer, ForeignKey('regionals_nonna.id'))
+    date = Column(DateTime(timezone=True), nullable=False)
+    league_points = Column(Integer, nullable=False)
+
+
+class RegionalsPlayers(Base):
+    __tablename__ = 'regionals_players'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    player_id = Column(Integer, nullable=False)
+    table_name = Column(String(50), nullable=False)
+    __table_args__ = (
+        CheckConstraint(table_name.in_(['players', 'regionals_nonna'])),
+    )

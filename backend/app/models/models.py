@@ -232,5 +232,23 @@ class LeagueJoinRequest(BaseModel):
     name: str
     password: str = None
 
+
 class UpdateCurrentLeagueRequest(BaseModel):
     current_league_id: int
+
+
+class Pick(BaseModel):
+    player_id: int
+    rank: int
+
+
+class Question(BaseModel):
+    question: str
+    answer: str
+
+
+class FutureSightCreate(BaseModel):
+    user_id: int
+    picks: list[Pick]
+    questions: list[Question]
+

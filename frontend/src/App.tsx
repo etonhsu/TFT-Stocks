@@ -24,6 +24,7 @@ import {ScrollToTop} from "./components/headerbar/ScrollToTop.tsx";
 import {SearchResults} from "./pages/SearchResults.tsx";
 import {Leagues} from "./pages/Leagues.tsx";
 import {LeagueProvider} from "./components/leagues/LeagueProvider.tsx";
+import {FFS} from "./pages/FFS.tsx";
 
 function App() {
     const [currentLeagueId, setCurrentLeagueId] = useState<number>(0);
@@ -53,6 +54,7 @@ function App() {
                                         <Route path="/" element={<Slideshow/>}/>
                                         <Route path="/FAQ" element={<FAQPage/>}/>
                                         <Route path="/leagues" element={<Leagues />} />
+                                        <Route path="/ffs" element={<FFS />} />
                                     </Routes>
                                 </Suspense>
                                 <Login />
