@@ -29,11 +29,25 @@ interface RankingItem {
   player: Player | null;
 }
 
+const ContentWrapper = styled.div`
+  flex: 1;
+  padding: 20px;
+`;
+
+const PlayerListWrapper = styled.div`
+  width: 300px;
+  height: 558px;
+  position: sticky;
+  top: 0;
+  background-color: #222;
+  overflow-y: auto;
+  padding-right: 20px;
+`;
+
 const PlayerGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: 1fr;
   grid-gap: 10px;
-  margin: 10px 49px 50px 50px;
 `;
 
 const DraggablePlayerContainer = styled.div`
@@ -81,9 +95,10 @@ const DraggablePlayer: React.FC<{ player: Player, onClick: () => void }> = ({ pl
 const RankingContainerWrapper = styled.div`
   display: flex;
   flex-direction: row;
+  justify-content: space-between;
   margin-top: 20px;
-  margin-left: 50px;
   padding-bottom: 30px;
+  width: 76vw;
 `;
 
 const RankingContainer = styled.div`
@@ -91,6 +106,7 @@ const RankingContainer = styled.div`
   flex-direction: column;
   gap: 10px;
   width: 450px;
+  margin-right: 50px;
 `;
 
 const RankingItemContainer = styled.div<{ borderColor: string }>`
@@ -164,8 +180,9 @@ const DropTarget: React.FC<{ index: number, player: Player | null, movePlayer: (
 const QuestionsContainer = styled.div`
   display: grid;
   grid-gap: 20px;
-  width: 500px;
+  width: 400px;
   margin-left: 50px;
+  margin-right: 50px;
 `;
 
 const Question = styled.div`
@@ -307,72 +324,76 @@ export const FFS: React.FC = () => {
             </ModalContent>
           </ModalOverlay>
         )}
-        <h1>Frodan's Future Sight</h1>
-        {selectedPlayer && (
-          <PlayerDetailsContainer label={selectedPlayer.name}>
-            {isDetailLoading ? (
-              <div>Loading...</div>
-            ) : (
-              <>
-                <TextContainer>
-                  <p>Qualified: </p>
-                  <p>Accolades: </p>
+        <ContentWrapper>
+          <h1>Frodan's Future Sight</h1>
+          {selectedPlayer && (
+            <PlayerDetailsContainer label={selectedPlayer.name}>
+              {isDetailLoading ? (
+                <div>Loading...</div>
+              ) : (
+                <>
+                  <TextContainer>
+                    <p>Qualified: </p>
+                    <p>Accolades: </p>
+                    {selectedPlayer.delist_date && <p>Delist Date: {selectedPlayer.delist_date}</p>}
+                  </TextContainer>
+                  <RegionalsChart playerData={{ date: selectedPlayer.date, price: selectedPlayer.price }} />
+                </>
+              )}
+            </PlayerDetailsContainer>
+          )}
+          <RankingContainerWrapper>
+            <QuestionsContainer>
+              <Question>
+                <QuestionLabel>Best AVP performing comp? (5 games min)</QuestionLabel>
+                <QuestionInput type="text" />
+              </Question>
+              <Question>
+                <QuestionLabel>Rank the regionals AVP (NA, LATAM, BR)</QuestionLabel>
+                <QuestionInput type="text" />
+              </Question>
+              <Question>
+                <QuestionLabel>Who wins the event?</QuestionLabel>
+                <QuestionInput type="text" />
+              </Question>
+              <Question>
+                <QuestionLabel>Highest score for a day?</QuestionLabel>
+                <QuestionInput type="text" />
+              </Question>
+              <Question>
+                <QuestionLabel>How many players does NA send to worlds?</QuestionLabel>
+                <QuestionInput type="text" />
+              </Question>
+              <Question>
+                <QuestionLabel>Who does better: Bryce or Frodan?</QuestionLabel>
+                <QuestionInput type="text" />
+              </Question>
+            </QuestionsContainer>
+            <RankingContainer>
+              {ranking.map((item, index) => (
+                <DropTarget
+                  key={index}
+                  index={index}
+                  player={item.player}
+                  movePlayer={movePlayer}
+                  onClick={() => item.player && fetchPlayerStats(item.player.game_name, item.player.tag_line)}
+                />
+              ))}
+            </RankingContainer>
 
-                  {selectedPlayer.delist_date && <p>Delist Date: {selectedPlayer.delist_date}</p>}
-                </TextContainer>
-                <RegionalsChart playerData={{ date: selectedPlayer.date, price: selectedPlayer.price }} />
-              </>
-            )}
-          </PlayerDetailsContainer>
-        )}
-        <PlayerGrid>
-          {players.map(player => (
-            <DraggablePlayer
-              key={player.id}
-              player={player}
-              onClick={() => fetchPlayerStats(player.game_name, player.tag_line)}
-            />
-          ))}
-        </PlayerGrid>
-        <RankingContainerWrapper>
-          <RankingContainer>
-            {ranking.map((item, index) => (
-              <DropTarget
-                key={index}
-                index={index}
-                player={item.player}
-                movePlayer={movePlayer}
-                onClick={() => item.player && fetchPlayerStats(item.player.game_name, item.player.tag_line)}
-              />
-            ))}
-          </RankingContainer>
-          <QuestionsContainer>
-            <Question>
-              <QuestionLabel>Best AVP performing comp? (5 games min)</QuestionLabel>
-              <QuestionInput type="text" />
-            </Question>
-            <Question>
-              <QuestionLabel>Rank the regionals AVP (NA, LATAM, BR)</QuestionLabel>
-              <QuestionInput type="text" />
-            </Question>
-            <Question>
-              <QuestionLabel>Who wins the event?</QuestionLabel>
-              <QuestionInput type="text" />
-            </Question>
-            <Question>
-              <QuestionLabel>Highest score for a day?</QuestionLabel>
-              <QuestionInput type="text" />
-            </Question>
-            <Question>
-              <QuestionLabel>How many players does NA send to worlds?</QuestionLabel>
-              <QuestionInput type="text" />
-            </Question>
-            <Question>
-              <QuestionLabel>Who does better: Bryce or Frodan?</QuestionLabel>
-              <QuestionInput type="text" />
-            </Question>
-          </QuestionsContainer>
-        </RankingContainerWrapper>
+            <PlayerListWrapper>
+              <PlayerGrid>
+                {players.map(player => (
+                  <DraggablePlayer
+                    key={player.id}
+                    player={player}
+                    onClick={() => fetchPlayerStats(player.game_name, player.tag_line)}
+                  />
+                ))}
+              </PlayerGrid>
+            </PlayerListWrapper>
+          </RankingContainerWrapper>
+        </ContentWrapper>
       </MainContent>
     </DndProvider>
   );

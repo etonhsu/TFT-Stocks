@@ -24,7 +24,7 @@ const PlayerDetailsLabel = styled.span`
 const PlayerDetails = styled.div`
     height: auto;
     min-height: 330px;
-    min-width: 300px;
+    width: 71vw;
     border: 3px solid #666;
     border-radius: 10px;
     margin: 20px 50px 20px;
