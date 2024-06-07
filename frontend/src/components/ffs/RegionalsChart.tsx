@@ -25,7 +25,7 @@ const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>)
       <div style={{
         backgroundColor: '#333',
         boxShadow: '0 2px 4px 0 #555',
-        padding: '0px 10px',
+        padding: '0px 11px',
         textAlign: 'center', // Centers text horizontally
         display: 'flex',
         flexDirection: 'column', // Stack children vertically
