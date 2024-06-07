@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   XAxis, YAxis, CartesianGrid, ResponsiveContainer, AreaChart, Tooltip, Area, TooltipProps
-} from 'recharts';
+} from '../../../node_modules/recharts';
 import {ChartStyledButton} from "../../containers/multiUse/ChartContainer.tsx";
 import styled from "styled-components";
 
