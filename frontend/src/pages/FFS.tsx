@@ -352,7 +352,7 @@ export const FFS: React.FC = () => {
                               ))}
                             </>
                           )}
-                          {q.question === 'Rank the regionals AVP (NA, LATAM, BR)' && (
+                          {q.question === 'Rank the regionals AVP (NA | LATAM | BR)' && (
                             <>
                               <option value="">Select an option</option>
                               {[
