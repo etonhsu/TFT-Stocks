@@ -282,8 +282,8 @@ export const FFS: React.FC = () => {
   };
 
   if (isLoading) {
-    return <div>Loading...</div>;
-  }
+        return (<MainContent className="mainContentContainer">Loading...</MainContent>);
+    }
 
   if (error) {
     return (<MainContent className="mainContentContainer">{error}</MainContent>);
