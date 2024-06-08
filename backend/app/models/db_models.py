@@ -163,9 +163,11 @@ class FutureSightPick(Base):
     future_sight_id = Column(Integer, ForeignKey('future_sight.id'))
     player_id = Column(Integer, ForeignKey('players.id'))
     rank = Column(Integer)
+    table_name = Column(String)  # New attribute to specify the table name
 
     future_sight = relationship('FutureSight', back_populates='picks')
     player = relationship('Player')
+
 
 
 class FutureSightQuestion(Base):

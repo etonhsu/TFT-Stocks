@@ -43,7 +43,8 @@ async def create_future_sight(
             new_pick = FutureSightPick(
                 future_sight_id=new_future_sight.id,
                 player_id=pick.player_id,
-                rank=pick.rank
+                rank=pick.rank,
+                table_name=pick.table_name  # Ensure table_name is provided
             )
             db.add(new_pick)
 
@@ -85,11 +86,17 @@ async def get_regionals_players(db: Session = Depends(get_db)):
                 player = db.query(RegionalsNonna).filter(RegionalsNonna.id == rp.player_id).first()
 
             if player:
-                player_details.append(player)
+                player_details.append({
+                    'id': player.id,
+                    'game_name': player.game_name,
+                    'tag_line': player.tag_line,
+                    'table_name': rp.table_name
+                })
 
         return player_details
     except SQLAlchemyError as e:
         raise HTTPException(status_code=500, detail="Database error")
+
 
 
 @router.get('/ffs/players/{gameName}/{tagLine}')
@@ -146,3 +153,53 @@ async def player_info(gameName: str, tagLine: str, db: Session = Depends(get_db)
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get('/ffs/has_future_sight')
+async def has_future_sight(
+        user: UserProfile = Depends(get_user_from_token),
+        db: Session = Depends(get_db)
+):
+    if not user:
+        raise HTTPException(status_code=404, detail='User not found')
+
+    user_record = db.query(User).filter(User.username == user.username).first()
+    if not user_record:
+        raise HTTPException(status_code=404, detail='User not found in database')
+
+    future_sight_entry = db.query(FutureSight).filter(FutureSight.user_id == user_record.id).first()
+
+    return {"hasFutureSight": bool(future_sight_entry)}
+
+
+@router.get('/ffs/user_future_sight')
+async def get_user_future_sight(user: UserProfile = Depends(get_user_from_token), db: Session = Depends(get_db)):
+    user_record = db.query(User).filter(User.username == user.username).first()
+    if not user_record:
+        raise HTTPException(status_code=404, detail='User not found')
+
+    future_sight = db.query(FutureSight).filter(FutureSight.user_id == user_record.id).first()
+    if not future_sight:
+        return {"ranking": [], "questions": []}
+
+    picks = []
+    for pick in future_sight.picks:
+        player = None
+        if pick.table_name == 'players':
+            player = db.query(Player).filter(Player.id == pick.player_id).first()
+        elif pick.table_name == 'regionals_nonna':
+            player = db.query(RegionalsNonna).filter(RegionalsNonna.id == pick.player_id).first()
+
+        if player:
+            picks.append({
+                "player_id": pick.player_id,
+                "rank": pick.rank,
+                "game_name": player.game_name,
+                "tag_line": player.tag_line,
+                "table_name": pick.table_name
+            })
+
+    questions = [{"question": q.question, "answer": q.answer} for q in future_sight.questions]
+
+    return {"ranking": picks, "questions": questions}
+

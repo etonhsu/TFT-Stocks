@@ -247,8 +247,16 @@ class Question(BaseModel):
     answer: str
 
 
+class FutureSightPickCreate(BaseModel):
+    player_id: int
+    rank: int
+    table_name: str
+
+class FutureSightQuestionCreate(BaseModel):
+    question: str
+    answer: str
+
 class FutureSightCreate(BaseModel):
-    user_id: int
-    picks: list[Pick]
-    questions: list[Question]
+    picks: List[FutureSightPickCreate]
+    questions: List[FutureSightQuestionCreate]
 
