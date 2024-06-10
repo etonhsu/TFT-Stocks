@@ -1,11 +1,11 @@
 from datetime import timezone
 
 from fastapi import HTTPException, Depends, APIRouter
-from sqlalchemy import and_
+from sqlalchemy import and_, desc
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from app.models.models import FutureSightCreate, UserProfile
+from app.models.models import FutureSightCreate, UserProfile, LeaderboardUser, Pick
 from app.models.db_models import User, Player, FutureSight, FutureSightPick, FutureSightQuestion, RegionalsPlayers, \
     RegionalsNonna, RegionalsData, PlayerData
 from app.db.database import get_db
@@ -80,22 +80,29 @@ async def get_regionals_players(db: Session = Depends(get_db)):
         player_details = []
 
         for rp in regionals_players:
+            player = None
             if rp.table_name == 'players':
                 player = db.query(Player).filter(Player.id == rp.player_id).first()
             elif rp.table_name == 'regionals_nonna':
                 player = db.query(RegionalsNonna).filter(RegionalsNonna.id == rp.player_id).first()
 
             if player:
+                total_points = db.query(RegionalsPlayers.total_points).filter(
+                    and_(RegionalsPlayers.player_id == player.id, RegionalsPlayers.table_name == rp.table_name)
+                ).scalar()
+
                 player_details.append({
                     'id': player.id,
                     'game_name': player.game_name,
                     'tag_line': player.tag_line,
-                    'table_name': rp.table_name
+                    'table_name': rp.table_name,
+                    'total_points': total_points
                 })
 
         return player_details
     except SQLAlchemyError as e:
         raise HTTPException(status_code=500, detail="Database error")
+
 
 
 
@@ -203,3 +210,30 @@ async def get_user_future_sight(user: UserProfile = Depends(get_user_from_token)
 
     return {"ranking": picks, "questions": questions}
 
+
+@router.get('/ffs/leaderboard', response_model=list[LeaderboardUser])
+async def get_leaderboard(db: Session = Depends(get_db)):
+    try:
+        # Get users with FutureSight data, ordered by current_points
+        future_sight_users = db.query(FutureSight).order_by(desc(FutureSight.current_points)).all()
+        leaderboard = []
+
+        for fs in future_sight_users:
+            user = db.query(User).filter_by(id=fs.user_id).first()
+            if not user:
+                continue
+
+            picks = db.query(FutureSightPick).filter_by(future_sight_id=fs.id).order_by(FutureSightPick.rank).all()
+            pick_list = [Pick(player_id=pick.player_id, rank=pick.rank, game_name=pick.player.game_name, tag_line=pick.player.tag_line, table_name=pick.table_name) for pick in picks]
+
+            leaderboard.append(LeaderboardUser(
+                username=user.username,
+                current_points=fs.current_points,
+                picks=pick_list
+            ))
+
+        return leaderboard
+
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")

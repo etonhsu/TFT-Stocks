@@ -240,6 +240,9 @@ class UpdateCurrentLeagueRequest(BaseModel):
 class Pick(BaseModel):
     player_id: int
     rank: int
+    game_name: str
+    tag_line: str
+    table_name: str
 
 
 class Question(BaseModel):
@@ -252,11 +255,19 @@ class FutureSightPickCreate(BaseModel):
     rank: int
     table_name: str
 
+
 class FutureSightQuestionCreate(BaseModel):
     question: str
     answer: str
 
+
 class FutureSightCreate(BaseModel):
     picks: List[FutureSightPickCreate]
     questions: List[FutureSightQuestionCreate]
+
+
+class LeaderboardUser(BaseModel):
+    username: str
+    current_points: float
+    picks: List[Pick]
 

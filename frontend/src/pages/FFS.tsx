@@ -14,8 +14,10 @@ import {
   TextContainer
 } from "../containers/ffs/PlayerListContainer.tsx";
 import {
-  RankingContainer,
+  PlayerName, PlayerPoints,
+  RankingContainer, RankingContainer2,
   RankingContainerWrapper,
+  RankingContainerWrapper2,
   RankingItemContainer,
   RankingNumber
 } from "../containers/ffs/RankingContainer.tsx";
@@ -32,6 +34,7 @@ interface Player {
   game_name: string;
   tag_line: string;
   table_name: string;
+  total_points: number;
 }
 
 interface PlayerStats {
@@ -60,6 +63,13 @@ interface FutureSightRankingItem {
   game_name: string;
   tag_line: string;
   table_name: string;
+  total_points: number;
+}
+
+interface LeaderboardEntryData {
+  username: string;
+  current_points: number;
+  picks: FutureSightRankingItem[];
 }
 
 const DraggablePlayer: React.FC<{ player: Player, onClick: () => void }> = ({ player, onClick }) => {
@@ -111,6 +121,19 @@ const DropTarget: React.FC<{ index: number, player: Player | null, movePlayer: (
     }
   };
 
+  const calculatePoints = (points: number | undefined, rank: number): string => {
+    if (!points) return '0.00';
+    let multiplier = 1;
+    if (rank === 0) multiplier = 1.3;
+    if (rank === 1) multiplier = 1.2;
+    if (rank === 2) multiplier = 1.1;
+    return (points * multiplier).toFixed(2);
+  };
+
+  const points = player ? calculatePoints(player.total_points, index) : '0.00';
+
+  console.log(`DropTarget - Player: ${player?.game_name}, Total Points: ${points}`);
+
   return (
     <RankingItemContainer
       ref={(node) => disableDrag ? drop(node) : drop(drag(node))}
@@ -119,7 +142,12 @@ const DropTarget: React.FC<{ index: number, player: Player | null, movePlayer: (
       borderColor={getBorderColor()}
     >
       <RankingNumber>{index + 1}</RankingNumber>
-      {player ? `${player.game_name} (${player.tag_line})` : 'Drop a player here'}
+      <PlayerName>{player ? `${player.game_name} (${player.tag_line})` : 'Drop a player here'}</PlayerName>
+      {disableDrag && player && (
+        <PlayerPoints>
+          {points}pts
+        </PlayerPoints>
+      )}
     </RankingItemContainer>
   );
 };
@@ -141,6 +169,8 @@ export const FFS: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(true);
   const [hasFutureSight, setHasFutureSight] = useState(false);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntryData[]>([]);
+  const [selectedUserPicks, setSelectedUserPicks] = useState<Player[]>([]);
   const { token } = useAuth();
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
@@ -148,11 +178,57 @@ export const FFS: React.FC = () => {
     const fetchData = async () => {
       try {
         const playersResponse = await axios.get<Player[]>(`${backendUrl}/ffs/players`);
+        console.log('Players Response:', playersResponse.data); // Add debug statement
         setPlayers(playersResponse.data);
         setLoading(false);
         if (playersResponse.data.length > 0) {
           fetchPlayerStats(playersResponse.data[0].game_name, playersResponse.data[0].tag_line);
         }
+
+        try {
+          const hasFutureSightResponse = await axios.get(`${backendUrl}/ffs/has_future_sight`, {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          });
+          setHasFutureSight(hasFutureSightResponse.data.hasFutureSight);
+          if (hasFutureSightResponse.data.hasFutureSight) {
+            const userFutureSightResponse = await axios.get(`${backendUrl}/ffs/user_future_sight`, {
+              headers: {
+                Authorization: `Bearer ${token}`
+              }
+            });
+
+            console.log('User Future Sight Response:', userFutureSightResponse.data); // Add debug statement
+
+            // Sort ranking based on the rank attribute from the database
+            const sortedRanking = userFutureSightResponse.data.ranking.sort((a: FutureSightRankingItem, b: FutureSightRankingItem) => a.rank - b.rank);
+
+            setRanking(sortedRanking.map((item: FutureSightRankingItem) => {
+              const playerWithPoints = playersResponse.data.find(p => p.id === item.player_id);
+              return {
+                player: {
+                  id: item.player_id,
+                  game_name: item.game_name,
+                  tag_line: item.tag_line,
+                  table_name: item.table_name,
+                  total_points: playerWithPoints?.total_points || 0 // Set total_points
+                }
+              };
+            }));
+
+            // Update questions with the data from the backend
+            setQuestions(userFutureSightResponse.data.questions);
+          }
+        } catch (error) {
+          console.error('Error checking future sight:', error);
+        }
+
+        // Fetch leaderboard data
+        const leaderboardResponse = await axios.get<LeaderboardEntryData[]>(`${backendUrl}/ffs/leaderboard`);
+        console.log('Leaderboard Response:', leaderboardResponse.data); // Add debug statement
+        setLeaderboard(leaderboardResponse.data.slice(0, 20)); // Limit to top 20 entries
+
       } catch (error) {
         console.error('Error fetching data: ', error);
         setLoading(false);
@@ -165,39 +241,6 @@ export const FFS: React.FC = () => {
             setError('Failed to fetch players.');
           }
         }
-      }
-
-      try {
-        const hasFutureSightResponse = await axios.get(`${backendUrl}/ffs/has_future_sight`, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
-        setHasFutureSight(hasFutureSightResponse.data.hasFutureSight);
-        if (hasFutureSightResponse.data.hasFutureSight) {
-          const userFutureSightResponse = await axios.get(`${backendUrl}/ffs/user_future_sight`, {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          });
-
-          // Sort ranking based on the rank attribute from the database
-          const sortedRanking = userFutureSightResponse.data.ranking.sort((a: FutureSightRankingItem, b: FutureSightRankingItem) => a.rank - b.rank);
-
-          setRanking(sortedRanking.map((item: FutureSightRankingItem) => ({
-            player: {
-              id: item.player_id,
-              game_name: item.game_name,
-              tag_line: item.tag_line,
-              table_name: item.table_name
-            }
-          })));
-
-          // Update questions with the data from the backend
-          setQuestions(userFutureSightResponse.data.questions);
-        }
-      } catch (error) {
-        console.error('Error checking future sight:', error);
       }
     };
     fetchData();
@@ -213,6 +256,20 @@ export const FFS: React.FC = () => {
       console.error('Error fetching player stats:', error);
       setDetailLoading(false);
     }
+  };
+
+  const handleLeaderboardClick = (picks: FutureSightRankingItem[]) => {
+    const picksWithPoints = picks.map((pick) => {
+      const playerWithPoints = players.find(p => p.id === pick.player_id);
+      return {
+        id: pick.player_id,
+        game_name: pick.game_name,
+        tag_line: pick.tag_line,
+        table_name: pick.table_name,
+        total_points: playerWithPoints?.total_points || 0 // Ensure total_points is included
+      };
+    });
+    setSelectedUserPicks(picksWithPoints);
   };
 
   const movePlayer = (playerId: number, fromIndex: number | null, toIndex: number) => {
@@ -282,8 +339,8 @@ export const FFS: React.FC = () => {
   };
 
   if (isLoading) {
-        return (<MainContent className="mainContentContainer">Loading...</MainContent>);
-    }
+    return (<MainContent className="mainContentContainer">Loading...</MainContent>);
+  }
 
   if (error) {
     return (<MainContent className="mainContentContainer">{error}</MainContent>);
@@ -412,17 +469,49 @@ export const FFS: React.FC = () => {
             <PlayerListWrapper>
               <PlayerGrid>
                 {players.map(player => (
-                  <DraggablePlayer
-                    key={player.id}
-                    player={player}
-                    onClick={() => fetchPlayerStats(player.game_name, player.tag_line)}
-                  />
+                    <DraggablePlayer
+                        key={player.id}
+                        player={player}
+                        onClick={() => fetchPlayerStats(player.game_name, player.tag_line)}
+                    />
                 ))}
               </PlayerGrid>
             </PlayerListWrapper>
           </RankingContainerWrapper>
 
           {!hasFutureSight && <SubmitButton onClick={handleSubmit}>Submit</SubmitButton>}
+          <RankingContainerWrapper2>
+          {/* Leaderboard Section */}
+            <RankingContainer>
+              <h2>Leaderboard</h2>
+              {leaderboard.map((entry, index) => (
+                <RankingItemContainer
+                  key={index}
+                  borderColor="#666"
+                  onClick={() => handleLeaderboardClick(entry.picks)}
+                >
+                  <RankingNumber>{index + 1}</RankingNumber>
+                  <PlayerName>{entry.username}</PlayerName>
+                  <PlayerPoints>{entry.current_points.toFixed(2)}pts</PlayerPoints>
+                </RankingItemContainer>
+              ))}
+            </RankingContainer>
+
+            {/* Display selected user's picks */}
+            <RankingContainer2>
+              <h2>Selected User's Picks</h2>
+              {selectedUserPicks.map((item, index) => (
+                <DropTarget
+                  key={index}
+                  index={index}
+                  player={item}
+                  movePlayer={() => {}}
+                  onClick={() => fetchPlayerStats(item.game_name, item.tag_line)}
+                  disableDrag={true}
+                />
+              ))}
+            </RankingContainer2>
+          </RankingContainerWrapper2>
         </ContentWrapper>
       </MainContent>
     </DndProvider>

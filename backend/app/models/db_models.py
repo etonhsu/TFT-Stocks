@@ -206,6 +206,7 @@ class RegionalsPlayers(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     player_id = Column(Integer, nullable=False)
     table_name = Column(String(50), nullable=False)
+    total_points = Column(DECIMAL, default=0.0, nullable=False)
     __table_args__ = (
         CheckConstraint(table_name.in_(['players', 'regionals_nonna'])),
     )
