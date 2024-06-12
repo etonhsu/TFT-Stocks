@@ -181,12 +181,12 @@ export const FFS: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get<UserSummary>(`${backendUrl}/dashboard`, {
+        const userResponse = await axios.get<UserSummary>(`${backendUrl}/dashboard`, {
           headers: {
             Authorization: `Bearer ${token}`
           }
         });
-        setUserSummary(response.data);
+        setUserSummary(userResponse.data);
 
         const playersResponse = await axios.get<Player[]>(`${backendUrl}/ffs/players`);
         console.log('Players Response:', playersResponse.data); // Add debug statement
@@ -196,39 +196,43 @@ export const FFS: React.FC = () => {
           fetchPlayerStats(playersResponse.data[0].game_name, playersResponse.data[0].tag_line);
         }
 
-        const hasFutureSightResponse = await axios.get(`${backendUrl}/ffs/has_future_sight`, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
-        setHasFutureSight(hasFutureSightResponse.data.hasFutureSight);
-        if (hasFutureSightResponse.data.hasFutureSight) {
-          const userFutureSightResponse = await axios.get(`${backendUrl}/ffs/user_future_sight`, {
+        try {
+          const hasFutureSightResponse = await axios.get(`${backendUrl}/ffs/has_future_sight`, {
             headers: {
               Authorization: `Bearer ${token}`
             }
           });
-
-          console.log('User Future Sight Response:', userFutureSightResponse.data); // Add debug statement
-
-          // Sort ranking based on the rank attribute from the database
-          const sortedRanking = userFutureSightResponse.data.ranking.sort((a: FutureSightRankingItem, b: FutureSightRankingItem) => a.rank - b.rank);
-
-          setRanking(sortedRanking.map((item: FutureSightRankingItem) => {
-            const playerWithPoints = playersResponse.data.find(p => p.id === item.player_id);
-            return {
-              player: {
-                id: item.player_id,
-                game_name: item.game_name,
-                tag_line: item.tag_line,
-                table_name: item.table_name,
-                total_points: playerWithPoints?.total_points || 0 // Set total_points
+          setHasFutureSight(hasFutureSightResponse.data.hasFutureSight);
+          if (hasFutureSightResponse.data.hasFutureSight) {
+            const userFutureSightResponse = await axios.get(`${backendUrl}/ffs/user_future_sight`, {
+              headers: {
+                Authorization: `Bearer ${token}`
               }
-            };
-          }));
+            });
 
-          // Update questions with the data from the backend
-          setQuestions(userFutureSightResponse.data.questions);
+            console.log('User Future Sight Response:', userFutureSightResponse.data); // Add debug statement
+
+            // Sort ranking based on the rank attribute from the database
+            const sortedRanking = userFutureSightResponse.data.ranking.sort((a: FutureSightRankingItem, b: FutureSightRankingItem) => a.rank - b.rank);
+
+            setRanking(sortedRanking.map((item: FutureSightRankingItem) => {
+              const playerWithPoints = playersResponse.data.find(p => p.id === item.player_id);
+              return {
+                player: {
+                  id: item.player_id,
+                  game_name: item.game_name,
+                  tag_line: item.tag_line,
+                  table_name: item.table_name,
+                  total_points: playerWithPoints?.total_points || 0 // Set total_points
+                }
+              };
+            }));
+
+            // Update questions with the data from the backend
+            setQuestions(userFutureSightResponse.data.questions);
+          }
+        } catch (error) {
+          console.error('Error checking future sight:', error);
         }
 
         // Fetch leaderboard data
@@ -237,23 +241,21 @@ export const FFS: React.FC = () => {
         const fetchedLeaderboard = leaderboardResponse.data;
 
         // Find the current user in the leaderboard
-        if (userSummary) {
-          const currentUserIndex = fetchedLeaderboard.findIndex(entry => entry.username === userSummary.username);
+        const currentUserIndex = fetchedLeaderboard.findIndex(entry => entry.username === userResponse.data.username);
 
-          // Check if the user is in the top 20
-          if (currentUserIndex !== -1 && currentUserIndex < 20) {
-            setCurrentUserRank(currentUserIndex + 1);
-            setLeaderboard(fetchedLeaderboard.slice(0, 20)); // Limit to top 20 entries
+        // Check if the user is in the top 20
+        if (currentUserIndex !== -1 && currentUserIndex < 20) {
+          setCurrentUserRank(currentUserIndex + 1);
+          setLeaderboard(fetchedLeaderboard.slice(0, 20)); // Limit to top 20 entries
+        } else {
+          setCurrentUserRank(currentUserIndex + 1);
+          if (currentUserIndex !== -1) {
+            // Replace the 20th user with the current user
+            fetchedLeaderboard[19] = fetchedLeaderboard[currentUserIndex];
+            setLeaderboard(fetchedLeaderboard.slice(0, 20));
           } else {
-            setCurrentUserRank(currentUserIndex + 1);
-            if (currentUserIndex !== -1) {
-              // Replace the 20th user with the current user
-              fetchedLeaderboard[19] = fetchedLeaderboard[currentUserIndex];
-              setLeaderboard(fetchedLeaderboard.slice(0, 20));
-            } else {
-              // User not in the leaderboard
-              setLeaderboard(fetchedLeaderboard.slice(0, 20));
-            }
+            // User not in the leaderboard
+            setLeaderboard(fetchedLeaderboard.slice(0, 20));
           }
         }
 
@@ -520,31 +522,39 @@ export const FFS: React.FC = () => {
           {/* Leaderboard Section */}
             <RankingContainer>
               <h2>Leaderboard</h2>
-              {leaderboard.map((entry, index) => (
-                <RankingItemContainer
-                  key={index}
-                  borderColor={entry.username === userSummary?.username ? 'cornflowerblue' : '#666'}
-                  onClick={() => handleLeaderboardClick(entry.picks)}
-                >
-                  <RankingNumber>{entry.username === userSummary?.username ? currentUserRank : index + 1}</RankingNumber>
-                  <PlayerName>{entry.username}</PlayerName>
-                  <PlayerPoints>{entry.current_points.toFixed(2)}pts</PlayerPoints>
-                </RankingItemContainer>
-              ))}
+              {leaderboard.length > 0 ? (
+                leaderboard.map((entry, index) => (
+                  <RankingItemContainer
+                    key={index}
+                    borderColor={entry.username === userSummary?.username ? 'cornflowerblue' : '#666'}
+                    onClick={() => handleLeaderboardClick(entry.picks)}
+                  >
+                    <RankingNumber>{entry.username === userSummary?.username ? currentUserRank : index + 1}</RankingNumber>
+                    <PlayerName>{entry.username}</PlayerName>
+                    <PlayerPoints>{entry.current_points.toFixed(2)}pts</PlayerPoints>
+                  </RankingItemContainer>
+                ))
+              ) : (
+                <p>No leaderboard data available</p>
+              )}
             </RankingContainer>
             {/* Display selected user's picks */}
             <RankingContainer2>
               <h2>Selected User's Picks</h2>
-              {selectedUserPicks.map((item, index) => (
-                <DropTarget
-                  key={index}
-                  index={index}
-                  player={item}
-                  movePlayer={() => {}}
-                  onClick={() => fetchPlayerStats(item.game_name, item.tag_line)}
-                  disableDrag={true}
-                />
-              ))}
+              {selectedUserPicks.length > 0 ? (
+                selectedUserPicks.map((item, index) => (
+                  <DropTarget
+                    key={index}
+                    index={index}
+                    player={item}
+                    movePlayer={() => {}}
+                    onClick={() => fetchPlayerStats(item.game_name, item.tag_line)}
+                    disableDrag={true}
+                  />
+                ))
+              ) : (
+                <p>No picks available for selected user</p>
+              )}
             </RankingContainer2>
           </RankingContainerWrapper2>
         </ContentWrapper>
