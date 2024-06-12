@@ -28,6 +28,11 @@ async def create_future_sight(
     if not user_record:
         raise HTTPException(status_code=404, detail='User not found in database')
 
+    # Check if user already has a FutureSight entry
+    existing_future_sight = db.query(FutureSight).filter(FutureSight.user_id == user_record.id).first()
+    if existing_future_sight:
+        raise HTTPException(status_code=409, detail='User already has a FutureSight entry')
+
     try:
         # Create a new FutureSight entry
         new_future_sight = FutureSight(

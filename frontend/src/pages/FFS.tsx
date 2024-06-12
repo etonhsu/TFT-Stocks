@@ -28,6 +28,7 @@ import {
   QuestionsContainer,
   QuestionSelect, SubmitButton, AnswerBox
 } from "../containers/ffs/QuestionContainer.tsx";
+import {UserSummary} from "./Dashboard.tsx";
 
 interface Player {
   id: number;
@@ -172,11 +173,21 @@ export const FFS: React.FC = () => {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntryData[]>([]);
   const [selectedUserPicks, setSelectedUserPicks] = useState<Player[]>([]);
   const { token } = useAuth();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentUserRank, setCurrentUserRank] = useState<number | null>(null);
+  const [userSummary, setUserSummary] = useState<UserSummary | null>(null);
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
   useEffect(() => {
     const fetchData = async () => {
       try {
+        const response = await axios.get<UserSummary>(`${backendUrl}/dashboard`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        setUserSummary(response.data);
+
         const playersResponse = await axios.get<Player[]>(`${backendUrl}/ffs/players`);
         console.log('Players Response:', playersResponse.data); // Add debug statement
         setPlayers(playersResponse.data);
@@ -227,7 +238,28 @@ export const FFS: React.FC = () => {
         // Fetch leaderboard data
         const leaderboardResponse = await axios.get<LeaderboardEntryData[]>(`${backendUrl}/ffs/leaderboard`);
         console.log('Leaderboard Response:', leaderboardResponse.data); // Add debug statement
-        setLeaderboard(leaderboardResponse.data.slice(0, 20)); // Limit to top 20 entries
+        const fetchedLeaderboard = leaderboardResponse.data;
+
+        // Find the current user in the leaderboard
+        if (userSummary) {
+          const currentUserIndex = fetchedLeaderboard.findIndex(entry => entry.username === userSummary.username);
+
+          // Check if the user is in the top 20
+          if (currentUserIndex !== -1 && currentUserIndex < 20) {
+            setCurrentUserRank(currentUserIndex + 1);
+            setLeaderboard(fetchedLeaderboard.slice(0, 20)); // Limit to top 20 entries
+          } else {
+            setCurrentUserRank(currentUserIndex + 1);
+            if (currentUserIndex !== -1) {
+              // Replace the 20th user with the current user
+              fetchedLeaderboard[19] = fetchedLeaderboard[currentUserIndex];
+              setLeaderboard(fetchedLeaderboard.slice(0, 20));
+            } else {
+              // User not in the leaderboard
+              setLeaderboard(fetchedLeaderboard.slice(0, 20));
+            }
+          }
+        }
 
       } catch (error) {
         console.error('Error fetching data: ', error);
@@ -244,7 +276,7 @@ export const FFS: React.FC = () => {
       }
     };
     fetchData();
-  }, [backendUrl, token]);
+  }, [backendUrl, token, userSummary]);
 
   const fetchPlayerStats = async (gameName: string, tagLine: string) => {
     setDetailLoading(true);
@@ -308,6 +340,8 @@ export const FFS: React.FC = () => {
   };
 
   const handleSubmit = async () => {
+    setIsSubmitting(true);
+
     const picksData = ranking.map((item, index) => ({
       player_id: item.player?.id,
       table_name: item.player?.table_name,
@@ -326,9 +360,11 @@ export const FFS: React.FC = () => {
         },
       });
       // Handle successful submission (e.g., show success message)
+      window.location.reload();
     } catch (error) {
       setError('An error occurred while submitting your data.');
       console.error('Error submitting data:', error);
+      setIsSubmitting(false);
     }
   };
 
@@ -479,7 +515,11 @@ export const FFS: React.FC = () => {
             </PlayerListWrapper>
           </RankingContainerWrapper>
 
-          {!hasFutureSight && <SubmitButton onClick={handleSubmit}>Submit</SubmitButton>}
+          {!hasFutureSight &&
+              <SubmitButton onClick={handleSubmit} disabled={isSubmitting}>
+                {isSubmitting ? 'Loading...' : 'Submit'}
+              </SubmitButton>
+          }
           <RankingContainerWrapper2>
           {/* Leaderboard Section */}
             <RankingContainer>
@@ -487,16 +527,15 @@ export const FFS: React.FC = () => {
               {leaderboard.map((entry, index) => (
                 <RankingItemContainer
                   key={index}
-                  borderColor="#666"
+                  borderColor={entry.username === userSummary?.username ? 'cornflowerblue' : '#666'}
                   onClick={() => handleLeaderboardClick(entry.picks)}
                 >
-                  <RankingNumber>{index + 1}</RankingNumber>
+                  <RankingNumber>{entry.username === userSummary?.username ? currentUserRank : index + 1}</RankingNumber>
                   <PlayerName>{entry.username}</PlayerName>
                   <PlayerPoints>{entry.current_points.toFixed(2)}pts</PlayerPoints>
                 </RankingItemContainer>
               ))}
             </RankingContainer>
-
             {/* Display selected user's picks */}
             <RankingContainer2>
               <h2>Selected User's Picks</h2>

@@ -2,9 +2,14 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from contextlib import contextmanager
+from app.utils.get_secret import get_secret  # Adjust the import path as necessary
 
-# Get the database URL from your secrets manager
-DATABASE_URL = "postgresql+pg8000://etonhsu:K27AvlaPA6GYZ8NQ2tvt@tft-stocks-2b.c9ooisyqkieb.us-west-2.rds.amazonaws.com:5432/tft-stocks"
+# Fetch secrets from AWS Secrets Manager
+secret_name = "tft-stocks-keys"
+secrets = get_secret(secret_name)
+
+# Extract the database URL from the secrets
+DATABASE_URL = secrets["database_url"]
 
 # Create the SQLAlchemy engine
 engine = create_engine(DATABASE_URL)
