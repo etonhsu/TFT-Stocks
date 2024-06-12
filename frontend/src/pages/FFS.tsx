@@ -196,43 +196,39 @@ export const FFS: React.FC = () => {
           fetchPlayerStats(playersResponse.data[0].game_name, playersResponse.data[0].tag_line);
         }
 
-        try {
-          const hasFutureSightResponse = await axios.get(`${backendUrl}/ffs/has_future_sight`, {
+        const hasFutureSightResponse = await axios.get(`${backendUrl}/ffs/has_future_sight`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        setHasFutureSight(hasFutureSightResponse.data.hasFutureSight);
+        if (hasFutureSightResponse.data.hasFutureSight) {
+          const userFutureSightResponse = await axios.get(`${backendUrl}/ffs/user_future_sight`, {
             headers: {
               Authorization: `Bearer ${token}`
             }
           });
-          setHasFutureSight(hasFutureSightResponse.data.hasFutureSight);
-          if (hasFutureSightResponse.data.hasFutureSight) {
-            const userFutureSightResponse = await axios.get(`${backendUrl}/ffs/user_future_sight`, {
-              headers: {
-                Authorization: `Bearer ${token}`
+
+          console.log('User Future Sight Response:', userFutureSightResponse.data); // Add debug statement
+
+          // Sort ranking based on the rank attribute from the database
+          const sortedRanking = userFutureSightResponse.data.ranking.sort((a: FutureSightRankingItem, b: FutureSightRankingItem) => a.rank - b.rank);
+
+          setRanking(sortedRanking.map((item: FutureSightRankingItem) => {
+            const playerWithPoints = playersResponse.data.find(p => p.id === item.player_id);
+            return {
+              player: {
+                id: item.player_id,
+                game_name: item.game_name,
+                tag_line: item.tag_line,
+                table_name: item.table_name,
+                total_points: playerWithPoints?.total_points || 0 // Set total_points
               }
-            });
+            };
+          }));
 
-            console.log('User Future Sight Response:', userFutureSightResponse.data); // Add debug statement
-
-            // Sort ranking based on the rank attribute from the database
-            const sortedRanking = userFutureSightResponse.data.ranking.sort((a: FutureSightRankingItem, b: FutureSightRankingItem) => a.rank - b.rank);
-
-            setRanking(sortedRanking.map((item: FutureSightRankingItem) => {
-              const playerWithPoints = playersResponse.data.find(p => p.id === item.player_id);
-              return {
-                player: {
-                  id: item.player_id,
-                  game_name: item.game_name,
-                  tag_line: item.tag_line,
-                  table_name: item.table_name,
-                  total_points: playerWithPoints?.total_points || 0 // Set total_points
-                }
-              };
-            }));
-
-            // Update questions with the data from the backend
-            setQuestions(userFutureSightResponse.data.questions);
-          }
-        } catch (error) {
-          console.error('Error checking future sight:', error);
+          // Update questions with the data from the backend
+          setQuestions(userFutureSightResponse.data.questions);
         }
 
         // Fetch leaderboard data
@@ -276,7 +272,7 @@ export const FFS: React.FC = () => {
       }
     };
     fetchData();
-  }, [backendUrl, token, userSummary]);
+  }, [backendUrl, token]);
 
   const fetchPlayerStats = async (gameName: string, tagLine: string) => {
     setDetailLoading(true);
