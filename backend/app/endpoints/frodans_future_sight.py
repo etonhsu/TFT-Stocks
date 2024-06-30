@@ -116,9 +116,9 @@ async def player_info(gameName: str, tagLine: str, db: Session = Depends(get_db)
     try:
         # Determine which table to fetch from
         regionals_player = db.query(RegionalsPlayers).filter(
-            and_(RegionalsPlayers.table_name == 'regionals_nonna', RegionalsPlayers.player_id == Player.id)).first()
+            and_(RegionalsPlayers.player_id == Player.id)).first()
 
-        if regionals_player:
+        if regionals_player.table_name == 'regionals_nonna':
             # Fetch the player data from the regionals_nonna table
             player = db.query(RegionalsNonna).filter(
                 and_(RegionalsNonna.game_name == gameName, RegionalsNonna.tag_line == tagLine)).first()
@@ -161,7 +161,6 @@ async def player_info(gameName: str, tagLine: str, db: Session = Depends(get_db)
             '8 Hour Change': player.delta_8h,
             '24 Hour Change': player.delta_24h,
             '3 Day Change': player.delta_72h,
-            'delist_date': player.delist_date  # This will be None if not present
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
