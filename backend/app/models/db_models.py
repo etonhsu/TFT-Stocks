@@ -161,12 +161,15 @@ class FutureSightPick(Base):
     __tablename__ = 'future_sight_picks'
     id = Column(Integer, primary_key=True, autoincrement=True)
     future_sight_id = Column(Integer, ForeignKey('future_sight.id'))
-    player_id = Column(Integer, ForeignKey('players.id'))
+    player_id = Column(Integer)
     rank = Column(Integer)
-    table_name = Column(String)  # New attribute to specify the table name
+    table_name = Column(String)  # Attribute to specify the table name
 
     future_sight = relationship('FutureSight', back_populates='picks')
-    player = relationship('Player')
+
+    __table_args__ = (
+        CheckConstraint(table_name.in_(['players', 'regionals_nonna'])),
+    )
 
 
 

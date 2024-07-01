@@ -43,7 +43,7 @@ async def create_future_sight(
         db.commit()
         db.refresh(new_future_sight)
 
-        # Create FutureSightPick entries
+        # Validate and Create FutureSightPick entries
         for pick in future_sight_data.picks:
             new_pick = FutureSightPick(
                 future_sight_id=new_future_sight.id,
@@ -75,6 +75,8 @@ async def create_future_sight(
         db.rollback()
         print(f"Unexpected error during FutureSight creation for user {user.username}: {str(e)}")
         raise HTTPException(status_code=500, detail=f'Failed to create FutureSight: {str(e)}')
+
+
 
 
 @router.get('/ffs/players')
@@ -115,19 +117,15 @@ async def get_regionals_players(db: Session = Depends(get_db)):
 async def player_info(gameName: str, tagLine: str, db: Session = Depends(get_db)):
     try:
         # Determine which table to fetch from
-        regionals_player = db.query(RegionalsPlayers).filter(
-            and_(RegionalsPlayers.player_id == Player.id)).first()
+        player = db.query(RegionalsNonna).filter(
+            and_(RegionalsNonna.game_name == gameName, RegionalsNonna.tag_line == tagLine)
+        ).first()
 
-        if regionals_player.table_name == 'regionals_nonna':
-            # Fetch the player data from the regionals_nonna table
-            player = db.query(RegionalsNonna).filter(
-                and_(RegionalsNonna.game_name == gameName, RegionalsNonna.tag_line == tagLine)).first()
-            if not player:
-                raise HTTPException(status_code=404, detail="Player not found")
-
-            # Fetch the player data history from regionals_data table
+        if player:
+            # Fetch the player data history from the regionals_data table
             player_data = db.query(RegionalsData).filter(RegionalsData.player_id == player.id).order_by(
-                RegionalsData.date).all()
+                RegionalsData.date
+            ).all()
             if not player_data:
                 raise HTTPException(status_code=404, detail="Player data not found")
         else:
@@ -228,7 +226,24 @@ async def get_leaderboard(db: Session = Depends(get_db)):
                 continue
 
             picks = db.query(FutureSightPick).filter_by(future_sight_id=fs.id).order_by(FutureSightPick.rank).all()
-            pick_list = [Pick(player_id=pick.player_id, rank=pick.rank, game_name=pick.player.game_name, tag_line=pick.player.tag_line, table_name=pick.table_name) for pick in picks]
+            pick_list = []
+
+            for pick in picks:
+                if pick.table_name == 'players':
+                    player = db.query(Player).filter_by(id=pick.player_id).first()
+                elif pick.table_name == 'regionals_nonna':
+                    player = db.query(RegionalsNonna).filter_by(id=pick.player_id).first()
+                else:
+                    raise HTTPException(status_code=400, detail=f'Invalid table name: {pick.table_name}')
+
+                if player:
+                    pick_list.append(Pick(
+                        player_id=pick.player_id,
+                        rank=pick.rank,
+                        game_name=player.game_name,
+                        tag_line=player.tag_line,
+                        table_name=pick.table_name
+                    ))
 
             leaderboard.append(LeaderboardUser(
                 username=user.username,

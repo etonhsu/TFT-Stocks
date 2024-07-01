@@ -78,7 +78,7 @@ const DraggablePlayer: React.FC<{ player: Player, onClick: () => void }> = ({ pl
     type: 'PLAYER',
     item: { id: player.id, source: 'list' },
     collect: (monitor) => ({
-      isDragging: !!monitor.isDragging(),
+      isDragging: monitor.isDragging(),
     }),
   }), [player.id]);
 
@@ -88,12 +88,21 @@ const DraggablePlayer: React.FC<{ player: Player, onClick: () => void }> = ({ pl
       onClick={onClick}
       style={{ opacity: isDragging ? 0.5 : 1 }}
     >
-      {player.game_name} ({player.tag_line})
+      {player.game_name}
     </DraggablePlayerContainer>
   );
 };
 
-const DropTarget: React.FC<{ index: number, player: Player | null, movePlayer: (playerId: number, fromIndex: number | null, toIndex: number) => void, onClick: () => void, disableDrag?: boolean }> = ({ index, player, movePlayer, onClick, disableDrag }) => {
+const DropTarget: React.FC<{
+  index: number,
+  player: Player | null,
+  movePlayer: (playerId: number, fromIndex: number | null, toIndex: number) => void,
+  onClick: () => void,
+  disableDrag?: boolean,
+  isSelected: boolean,
+  isSelfUser: boolean
+}> = ({ index, player, movePlayer, onClick, disableDrag, isSelected, isSelfUser }) => {
+
   const [, drop] = useDrop(() => ({
     accept: 'PLAYER',
     drop: (item: { id: number, source: string, fromIndex?: number }) => {
@@ -105,7 +114,7 @@ const DropTarget: React.FC<{ index: number, player: Player | null, movePlayer: (
     type: 'PLAYER',
     item: { id: player?.id, source: 'container', fromIndex: index },
     collect: (monitor) => ({
-      isDragging: !!monitor.isDragging(),
+      isDragging: monitor.isDragging(),
     }),
   }), [index, player]);
 
@@ -141,9 +150,11 @@ const DropTarget: React.FC<{ index: number, player: Player | null, movePlayer: (
       onClick={onClick}
       style={{ opacity: isDragging ? 0.5 : 1 }}
       borderColor={getBorderColor()}
+      isSelected={isSelected}
+      isSelfUser={isSelfUser}
     >
       <RankingNumber>{index + 1}</RankingNumber>
-      <PlayerName>{player ? `${player.game_name} (${player.tag_line})` : 'Drop a player here'}</PlayerName>
+      <PlayerName>{player ? `${player.game_name}` : 'Drop a player here'}</PlayerName>
       {disableDrag && player && (
         <PlayerPoints>
           {points}pts
@@ -155,7 +166,9 @@ const DropTarget: React.FC<{ index: number, player: Player | null, movePlayer: (
 
 export const FFS: React.FC = () => {
   const [players, setPlayers] = useState<Player[]>([]);
+  const [allPlayers, setAllPlayers] = useState<Player[]>([]);
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerStats | null>(null);
+  const [selectedRankingItem, setSelectedRankingItem] = useState<number | null>(null);
   const [ranking, setRanking] = useState<RankingItem[]>(Array(8).fill({ player: null }));
   const [questions, setQuestions] = useState<Question[]>([
     { question: 'Best AVP performing comp? (5 games min)', answer: '' },
@@ -191,6 +204,7 @@ export const FFS: React.FC = () => {
         const playersResponse = await axios.get<Player[]>(`${backendUrl}/ffs/players`);
         console.log('Players Response:', playersResponse.data); // Add debug statement
         setPlayers(playersResponse.data);
+        setAllPlayers(playersResponse.data);
         setLoading(false);
         if (playersResponse.data.length > 0) {
           fetchPlayerStats(playersResponse.data[0].game_name, playersResponse.data[0].tag_line);
@@ -408,7 +422,6 @@ export const FFS: React.FC = () => {
                   <TextContainer>
                     <p>Qualified: </p>
                     <p>Accolades: </p>
-                    {selectedPlayer.delist_date && <p>Delist Date: {selectedPlayer.delist_date}</p>}
                   </TextContainer>
                   <RegionalsChart playerData={{ date: selectedPlayer.date, price: selectedPlayer.price }} />
                 </>
@@ -438,8 +451,8 @@ export const FFS: React.FC = () => {
                           {q.question === 'Best AVP performing comp? (5 games min)' && (
                             <>
                               <option value="">Select an option</option>
-                              {[1, 2, 3, 4, 5].map((num) => (
-                                <option key={num} value={num}>{num}</option>
+                              {['Kayn Reapers', 'Kaisa Trickshots', 'Ashe Snipers', 'Lillia Mythic', 'Syndra Fated', 'Lux Ammumu Reroll'].map((comp, index) => (
+                                <option key={index} value={comp}>{comp}</option>
                               ))}
                             </>
                           )}
@@ -457,7 +470,7 @@ export const FFS: React.FC = () => {
                           {q.question === 'Who wins the event?' && (
                             <>
                               <option value="">Select an option</option>
-                              {players.map((player) => (
+                              {allPlayers.map((player) => (
                                 <option key={player.id} value={player.game_name}>
                                   {player.game_name}
                                 </option>
@@ -496,6 +509,8 @@ export const FFS: React.FC = () => {
                   movePlayer={movePlayer}
                   onClick={() => item.player && fetchPlayerStats(item.player.game_name, item.player.tag_line)}
                   disableDrag={hasFutureSight}
+                  isSelected={false}
+                  isSelfUser={false}
                 />
               ))}
             </RankingContainer>
@@ -526,8 +541,13 @@ export const FFS: React.FC = () => {
                 leaderboard.map((entry, index) => (
                   <RankingItemContainer
                     key={index}
-                    borderColor={entry.username === userSummary?.username ? 'cornflowerblue' : '#666'}
-                    onClick={() => handleLeaderboardClick(entry.picks)}
+                    borderColor={'#666'}
+                    isSelected={selectedRankingItem === index}
+                    isSelfUser={entry.username === userSummary?.username}
+                    onClick={() => {
+                      setSelectedRankingItem(index);
+                      handleLeaderboardClick(entry.picks);
+                    }}
                   >
                     <RankingNumber>{entry.username === userSummary?.username ? currentUserRank : index + 1}</RankingNumber>
                     <PlayerName>{entry.username}</PlayerName>
@@ -547,9 +567,11 @@ export const FFS: React.FC = () => {
                     key={index}
                     index={index}
                     player={item}
-                    movePlayer={() => {}}
-                    onClick={() => fetchPlayerStats(item.game_name, item.tag_line)}
-                    disableDrag={true}
+                    movePlayer={movePlayer}
+                    onClick={() => item && fetchPlayerStats(item.game_name, item.tag_line)}
+                    disableDrag={hasFutureSight}
+                    isSelected={false}
+                    isSelfUser={false}
                   />
                 ))
               ) : (
@@ -563,4 +585,3 @@ export const FFS: React.FC = () => {
   );
 };
 
-export default FFS;

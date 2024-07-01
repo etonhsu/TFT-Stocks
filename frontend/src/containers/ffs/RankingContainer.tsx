@@ -35,18 +35,19 @@ export const RankingContainer2 = styled.div`
     height: 67vh;
 `;
 
-export const RankingItemContainer = styled.div<{ borderColor: string }>`
+export const RankingItemContainer = styled.div<{ borderColor: string, isSelected: boolean, isSelfUser: boolean }>`
   display: flex;
   flex-direction: row;
   justify-content: space-between;
   align-items: center;
   padding: 10px;
-  border: 3px solid ${props => props.borderColor};
+  border: 3px solid ${props => props.isSelected ? 'cornflowerblue' : props.borderColor};
   border-radius: 10px;
   background-color: #222;
   cursor: pointer;
   position: relative;
   height: 35px;
+    font-weight: ${props => props.isSelfUser ? 'bolder' : 'normal'};
   &:hover {
     text-decoration: underline;
   }

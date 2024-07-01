@@ -1,11 +1,17 @@
+import os
+
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
+from starlette.responses import Response
+from starlette.staticfiles import StaticFiles
 
 from app.endpoints import player, leaderboard, login, register, user, search, transaction, dashboard, \
     transaction_history, top_leaderboard, favorites, favorites_toggle, change_user_info, league_overview, league_create, \
     league_join, league_update, league_search, league_dropdown, league_edit, league_current, frodans_future_sight
 
 app = FastAPI(title='TFT Stocks API', version='1.0', description='API for a TFT stock market simulation')
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
 
 # Configure CORS middleware
 app.add_middleware(
@@ -50,6 +56,13 @@ app.include_router(league_edit.router)
 app.include_router(league_current.router)
 app.include_router(frodans_future_sight.router)
 
+
+@app.get("/riot.txt")
+async def get_riot_txt():
+    file_path = os.path.join("static", "riot.txt")
+    with open(file_path, "r") as file:
+        content = file.read()
+    return Response(content, media_type="text/plain")
 
 
 # Optional: Add any global middleware, event handlers, or exception handlers
