@@ -451,7 +451,7 @@ export const FFS: React.FC = () => {
                           {q.question === 'Best AVP performing comp? (5 games min)' && (
                             <>
                               <option value="">Select an option</option>
-                              {['Kayn Reapers', 'Kaisa Trickshots', 'Ashe Snipers', 'Lillia Mythic', 'Syndra Fated', 'Lux Ammumu Reroll'].map((comp, index) => (
+                              {['Kayn Reapers', 'Kaisa Trickshots', 'Ashe Snipers', 'Lillia Mythic', 'Syndra Fated', 'Lee Sin Duelists', 'Lux Ammumu Reroll'].map((comp, index) => (
                                 <option key={index} value={comp}>{comp}</option>
                               ))}
                             </>
