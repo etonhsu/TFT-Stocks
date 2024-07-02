@@ -93,11 +93,11 @@ const playerImages: { [key: string]: string } = {
   'Ripple Overdrive': 'https://imagedelivery.net/FyOCiyhdHuuNE-YjBaGjlg/d3dc6067-1bd5-45bb-adad-e60e8a0d4b00/public',
   'Bapzera': 'https://imagedelivery.net/FyOCiyhdHuuNE-YjBaGjlg/d3dc6067-1bd5-45bb-adad-e60e8a0d4b00/public',
   'Cambulee': 'https://imagedelivery.net/FyOCiyhdHuuNE-YjBaGjlg/d3dc6067-1bd5-45bb-adad-e60e8a0d4b00/public',
-  'mogumoguyummy': 'https://imagedelivery.net/FyOCiyhdHuuNE-YjBaGjlg/d3dc6067-1bd5-45bb-adad-e60e8a0d4b00/public',
+  'Pockygom': 'https://imagedelivery.net/FyOCiyhdHuuNE-YjBaGjlg/d3dc6067-1bd5-45bb-adad-e60e8a0d4b00/public',
   'Altenahue': 'https://imagedelivery.net/FyOCiyhdHuuNE-YjBaGjlg/d3dc6067-1bd5-45bb-adad-e60e8a0d4b00/public',
   'TOR Rereplay': 'https://imagedelivery.net/FyOCiyhdHuuNE-YjBaGjlg/d3dc6067-1bd5-45bb-adad-e60e8a0d4b00/public',
   'Brucelolll': 'https://imagedelivery.net/FyOCiyhdHuuNE-YjBaGjlg/d3dc6067-1bd5-45bb-adad-e60e8a0d4b00/public',
-  'wilf': 'https://imagedelivery.net/FyOCiyhdHuuNE-YjBaGjlg/d3dc6067-1bd5-45bb-adad-e60e8a0d4b00/public',
+  'Eunwilf': 'https://imagedelivery.net/FyOCiyhdHuuNE-YjBaGjlg/d3dc6067-1bd5-45bb-adad-e60e8a0d4b00/public',
   'Filup': 'https://imagedelivery.net/FyOCiyhdHuuNE-YjBaGjlg/d3dc6067-1bd5-45bb-adad-e60e8a0d4b00/public',
   'Koala Esbelto': 'https://imagedelivery.net/FyOCiyhdHuuNE-YjBaGjlg/d3dc6067-1bd5-45bb-adad-e60e8a0d4b00/public',
   'Slooper': 'https://imagedelivery.net/FyOCiyhdHuuNE-YjBaGjlg/d3dc6067-1bd5-45bb-adad-e60e8a0d4b00/public',
@@ -107,7 +107,7 @@ const playerImages: { [key: string]: string } = {
   'jdzielinski22': 'https://imagedelivery.net/FyOCiyhdHuuNE-YjBaGjlg/d3dc6067-1bd5-45bb-adad-e60e8a0d4b00/public',
 };
 
-const DraggablePlayer: React.FC<{ player: Player, onClick: () => void }> = ({ player, onClick }) => {
+const DraggablePlayer: React.FC<{ player: Player; onClick: () => void }> = ({ player, onClick }) => {
   const [{ isDragging }, drag] = useDrag(() => ({
     type: 'PLAYER',
     item: { id: player.id, source: 'list' },
@@ -116,13 +116,19 @@ const DraggablePlayer: React.FC<{ player: Player, onClick: () => void }> = ({ pl
     }),
   }), [player.id]);
 
+  // Conditional rendering for game_name
+  const displayName =
+    player.game_name === 'mogumoguyummy' ? 'Pockygom' :
+    player.game_name === 'wilf' ? 'Eunwilf' :
+    player.game_name;
+
   return (
     <DraggablePlayerContainer
       ref={drag}
       onClick={onClick}
       style={{ opacity: isDragging ? 0.5 : 1 }}
     >
-      {player.game_name}
+      {displayName}
     </DraggablePlayerContainer>
   );
 };
@@ -176,7 +182,13 @@ const DropTarget: React.FC<{
 
   const points = player ? calculatePoints(player.total_points, index) : '0.00';
 
-  console.log(`DropTarget - Player: ${player?.game_name}, Total Points: ${points}`);
+  // Conditional rendering for game_name
+  const displayName =
+    player?.game_name === 'mogumoguyummy' ? 'Pockygom' :
+    player?.game_name === 'wilf' ? 'Eunwilf' :
+    player?.game_name;
+
+  console.log(`DropTarget - Player: ${displayName}, Total Points: ${points}`);
 
   return (
     <RankingItemContainer
@@ -188,7 +200,7 @@ const DropTarget: React.FC<{
       isSelfUser={isSelfUser}
     >
       <RankingNumber>{index + 1}</RankingNumber>
-      <PlayerName>{player ? `${player.game_name}` : 'Drop a player here'}</PlayerName>
+      <PlayerName>{player ? displayName : 'Drop a player here'}</PlayerName>
       {disableDrag && player && (
         <PlayerPoints>
           {points}pts
@@ -197,6 +209,7 @@ const DropTarget: React.FC<{
     </RankingItemContainer>
   );
 };
+
 
 export const FFS: React.FC = () => {
   const [players, setPlayers] = useState<Player[]>([]);
@@ -448,13 +461,30 @@ export const FFS: React.FC = () => {
         <ContentWrapper>
           <h1>Frodan's Future Sight</h1>
           {selectedPlayer && (
-            <PlayerDetailsContainer label={selectedPlayer.name}>
+            <PlayerDetailsContainer
+              label={
+                selectedPlayer.name === 'mogumoguyummy' ? 'Pockygom' :
+                selectedPlayer.name === 'wilf' ? 'Eunwilf' :
+                selectedPlayer.name
+              }
+            >
               {isDetailLoading ? (
                 <div>Loading...</div>
               ) : (
                 <>
                   <ImageContainer>
-                    <PlayerImage src={playerImages[selectedPlayer.name]} alt={selectedPlayer.name} />
+                    <PlayerImage
+                      src={playerImages[
+                        selectedPlayer.name === 'mogumoguyummy' ? 'Pockygom' :
+                        selectedPlayer.name === 'wilf' ? 'Eunwilf' :
+                        selectedPlayer.name
+                      ]}
+                      alt={
+                        selectedPlayer.name === 'mogumoguyummy' ? 'Pockygom' :
+                        selectedPlayer.name === 'wilf' ? 'Eunwilf' :
+                        selectedPlayer.name
+                      }
+                    />
                   </ImageContainer>
                   <RegionalsChart playerData={{ date: selectedPlayer.date, price: selectedPlayer.price }} />
                 </>
