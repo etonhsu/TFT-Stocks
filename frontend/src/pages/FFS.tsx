@@ -9,9 +9,8 @@ import { ModalOverlay, ModalContent } from '../containers/multiUse/StyledCompone
 import { useAuth } from '../utils/Authentication.tsx';
 import {
   ContentWrapper,
-  DraggablePlayerContainer, PlayerGrid,
+  DraggablePlayerContainer, ImageContainer, PlayerGrid, PlayerImage,
   PlayerListWrapper,
-  TextContainer
 } from "../containers/ffs/PlayerListContainer.tsx";
 import {
   PlayerName, PlayerPoints,
@@ -72,6 +71,41 @@ interface LeaderboardEntryData {
   current_points: number;
   picks: FutureSightRankingItem[];
 }
+
+const playerImages: { [key: string]: string } = {
+  'FNC Dishsoap': 'https://imagedelivery.net/FyOCiyhdHuuNE-YjBaGjlg/d3dc6067-1bd5-45bb-adad-e60e8a0d4b00/public',
+  'VIT setsuko': 'https://imagedelivery.net/FyOCiyhdHuuNE-YjBaGjlg/d3dc6067-1bd5-45bb-adad-e60e8a0d4b00/public',
+  'SpencerTFT': 'https://imagedelivery.net/FyOCiyhdHuuNE-YjBaGjlg/d3dc6067-1bd5-45bb-adad-e60e8a0d4b00/public',
+  'TL grea': 'https://imagedelivery.net/FyOCiyhdHuuNE-YjBaGjlg/d3dc6067-1bd5-45bb-adad-e60e8a0d4b00/public',
+  'DavidAs': 'https://imagedelivery.net/FyOCiyhdHuuNE-YjBaGjlg/d3dc6067-1bd5-45bb-adad-e60e8a0d4b00/public',
+  'FNCwasianiverson': 'https://imagedelivery.net/FyOCiyhdHuuNE-YjBaGjlg/d3dc6067-1bd5-45bb-adad-e60e8a0d4b00/public',
+  'Liquid ego': 'https://imagedelivery.net/FyOCiyhdHuuNE-YjBaGjlg/d3dc6067-1bd5-45bb-adad-e60e8a0d4b00/public',
+  'vclf': 'https://imagedelivery.net/FyOCiyhdHuuNE-YjBaGjlg/d3dc6067-1bd5-45bb-adad-e60e8a0d4b00/public',
+  'eusouolucas': 'https://imagedelivery.net/FyOCiyhdHuuNE-YjBaGjlg/d3dc6067-1bd5-45bb-adad-e60e8a0d4b00/public',
+  'toddy': 'https://imagedelivery.net/FyOCiyhdHuuNE-YjBaGjlg/d3dc6067-1bd5-45bb-adad-e60e8a0d4b00/public',
+  'INF HR Relic': 'https://imagedelivery.net/FyOCiyhdHuuNE-YjBaGjlg/d3dc6067-1bd5-45bb-adad-e60e8a0d4b00/public',
+  'INF HR SuperPino': 'https://imagedelivery.net/FyOCiyhdHuuNE-YjBaGjlg/d3dc6067-1bd5-45bb-adad-e60e8a0d4b00/public',
+  'ISG MAIKEL': 'https://imagedelivery.net/FyOCiyhdHuuNE-YjBaGjlg/d3dc6067-1bd5-45bb-adad-e60e8a0d4b00/public',
+  'ISG FRITZ': 'https://imagedelivery.net/FyOCiyhdHuuNE-YjBaGjlg/d3dc6067-1bd5-45bb-adad-e60e8a0d4b00/public',
+  'Mismatched Socks': 'https://imagedelivery.net/FyOCiyhdHuuNE-YjBaGjlg/d3dc6067-1bd5-45bb-adad-e60e8a0d4b00/public',
+  'VIT prestivent': 'https://imagedelivery.net/FyOCiyhdHuuNE-YjBaGjlg/d3dc6067-1bd5-45bb-adad-e60e8a0d4b00/public',
+  'Só bio': 'https://imagedelivery.net/FyOCiyhdHuuNE-YjBaGjlg/d3dc6067-1bd5-45bb-adad-e60e8a0d4b00/public',
+  'Ripple Overdrive': 'https://imagedelivery.net/FyOCiyhdHuuNE-YjBaGjlg/d3dc6067-1bd5-45bb-adad-e60e8a0d4b00/public',
+  'Bapzera': 'https://imagedelivery.net/FyOCiyhdHuuNE-YjBaGjlg/d3dc6067-1bd5-45bb-adad-e60e8a0d4b00/public',
+  'Cambulee': 'https://imagedelivery.net/FyOCiyhdHuuNE-YjBaGjlg/d3dc6067-1bd5-45bb-adad-e60e8a0d4b00/public',
+  'mogumoguyummy': 'https://imagedelivery.net/FyOCiyhdHuuNE-YjBaGjlg/d3dc6067-1bd5-45bb-adad-e60e8a0d4b00/public',
+  'Altenahue': 'https://imagedelivery.net/FyOCiyhdHuuNE-YjBaGjlg/d3dc6067-1bd5-45bb-adad-e60e8a0d4b00/public',
+  'TOR Rereplay': 'https://imagedelivery.net/FyOCiyhdHuuNE-YjBaGjlg/d3dc6067-1bd5-45bb-adad-e60e8a0d4b00/public',
+  'Brucelolll': 'https://imagedelivery.net/FyOCiyhdHuuNE-YjBaGjlg/d3dc6067-1bd5-45bb-adad-e60e8a0d4b00/public',
+  'wilf': 'https://imagedelivery.net/FyOCiyhdHuuNE-YjBaGjlg/d3dc6067-1bd5-45bb-adad-e60e8a0d4b00/public',
+  'Filup': 'https://imagedelivery.net/FyOCiyhdHuuNE-YjBaGjlg/d3dc6067-1bd5-45bb-adad-e60e8a0d4b00/public',
+  'Koala Esbelto': 'https://imagedelivery.net/FyOCiyhdHuuNE-YjBaGjlg/d3dc6067-1bd5-45bb-adad-e60e8a0d4b00/public',
+  'Slooper': 'https://imagedelivery.net/FyOCiyhdHuuNE-YjBaGjlg/d3dc6067-1bd5-45bb-adad-e60e8a0d4b00/public',
+  'VIT Milk': 'https://imagedelivery.net/FyOCiyhdHuuNE-YjBaGjlg/d3dc6067-1bd5-45bb-adad-e60e8a0d4b00/public',
+  'Aesah': 'https://imagedelivery.net/FyOCiyhdHuuNE-YjBaGjlg/d3dc6067-1bd5-45bb-adad-e60e8a0d4b00/public',
+  'TexSummers': 'https://imagedelivery.net/FyOCiyhdHuuNE-YjBaGjlg/d3dc6067-1bd5-45bb-adad-e60e8a0d4b00/public',
+  'jdzielinski22': 'https://imagedelivery.net/FyOCiyhdHuuNE-YjBaGjlg/d3dc6067-1bd5-45bb-adad-e60e8a0d4b00/public',
+};
 
 const DraggablePlayer: React.FC<{ player: Player, onClick: () => void }> = ({ player, onClick }) => {
   const [{ isDragging }, drag] = useDrag(() => ({
@@ -419,10 +453,9 @@ export const FFS: React.FC = () => {
                 <div>Loading...</div>
               ) : (
                 <>
-                  <TextContainer>
-                    <p>Qualified: </p>
-                    <p>Accolades: </p>
-                  </TextContainer>
+                  <ImageContainer>
+                    <PlayerImage src={playerImages[selectedPlayer.name]} alt={selectedPlayer.name} />
+                  </ImageContainer>
                   <RegionalsChart playerData={{ date: selectedPlayer.date, price: selectedPlayer.price }} />
                 </>
               )}

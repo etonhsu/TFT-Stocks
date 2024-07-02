@@ -50,9 +50,16 @@ export const DraggablePlayerContainer = styled.div`
   }
 `;
 
-export const TextContainer = styled.div`
-  margin-top: 10px;
-  display: flex;
-  flex-direction: column;
+export const ImageContainer = styled.div`
   width: 400px;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center
+`;
+
+export const PlayerImage = styled.img`
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
 `;
