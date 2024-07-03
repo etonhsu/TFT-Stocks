@@ -58,10 +58,11 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, text }) => {
 };
 
 const currentNotification = {
-  message:  "Hi everyone, I just made the switch to a new database that will help with the efficiency of the site. I tried to do it at a time where the least number " +
-            "of people would be affected, but I'm sure a few transactions were lost during transfer. If you think you were affected by the change, please message me on " +
-            "discord or twitter, and I'll work with you to make sure everything's right. I'm sorry for the inconvenience, and thank you for the continued support!",
-  version: 9
+  message:  "Hey everyone! Been a little while since I've done an update, but congratulations to ozymandias for winning the first " +
+            "Monthly League with a total of $5,489,398.88. Thank you to everyone who continues to use the site, I hope to keep improving " +
+            "on it potentially adding prizes for future league winners! I know the transition as a league ends hasn't been the smoothest, " +
+            "and that's something I'm hoping to clean up in the future as well.",
+  version: 10
 };
 
 export const ButtonWithModal: React.FC = () => {

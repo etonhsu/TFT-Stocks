@@ -6,7 +6,8 @@ from decimal import Decimal
 import logging
 
 from app.models.models import TransactionRequest, UserProfile
-from app.models.db_models import User, Player, Portfolio, PortfolioPlayer, PortfolioHold, Transaction, PlayerData, UserLeagues
+from app.models.db_models import User, Player, Portfolio, PortfolioPlayer, PortfolioHold, Transaction, PlayerData, \
+    UserLeagues, League
 from app.db.database import get_db
 from app.core.token import get_user_from_token
 from app.models.pricing_model import price_model
@@ -52,6 +53,14 @@ async def add_transaction(
     user_league = db.query(UserLeagues).filter(and_(UserLeagues.user_id == user_record.id, UserLeagues.league_id == user_record.current_league_id)).first()
     if not user_league:
         raise HTTPException(status_code=404, detail='User not associated with current league')
+
+    league = db.query(League).filter(League.id == user_league.league_id).first()
+    if not league:
+        raise HTTPException(status_code=404, detail='League not found')
+
+    # Check if the league has ended
+    if datetime.now(timezone.utc) > league.end_date:
+        raise HTTPException(status_code=400, detail='The league has ended, transactions are not allowed')
 
     balance = user_league.balance
     portfolio = db.query(Portfolio).filter(Portfolio.id == user_league.portfolio_id).first()

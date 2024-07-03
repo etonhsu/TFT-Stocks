@@ -1,0 +1,45 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.12
+    commands:
+      - echo Installing dependencies...
+      - pip install --upgrade pip
+      - pip install -r requirements.txt
+  pre_build:
+    commands:
+      - echo Pre-build phase...
+      - echo Running database migrations...
+      - alembic upgrade head
+  build:
+    commands:
+      - echo Build phase...
+      - echo Running tests...
+      - pytest tests/
+  post_build:
+    commands:
+      - echo Post-build phase...
+      - echo Building Docker image...
+      - docker build -t tftstocks-backend .
+      - echo Tagging Docker image...
+      - docker tag tftstocks-backend:latest $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/tftstocks-backend:latest
+      - echo Logging in to Amazon ECR...
+      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+      - echo Pushing Docker image to ECR...
+      - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/tftstocks-backend:latest
+
+artifacts:
+  files:
+    - '**/*'
+  discard-paths: yes
+
+cache:
+  paths:
+    - '/root/.cache/pip/**/*'
+
+env:
+  variables:
+    AWS_REGION: us-west-2
+    AWS_ACCOUNT_ID: 123456789012

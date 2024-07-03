@@ -1,7 +1,15 @@
 import {useAuth} from "../utils/Authentication.tsx";
 import {ActionSection, NavSection, SidebarContainer} from "../containers/general/SidebarContainer.tsx";
 import {StyledLink} from "../containers/general/SidebarLink.tsx";
-import {DashboardIcon, FavoritesIcon, LeaderboardIcon, LeaguesIcon, Logo, TransactionIcon} from "../assets/Icons.tsx";
+import {
+    CrystalBall,
+    DashboardIcon,
+    FavoritesIcon,
+    LeaderboardIcon,
+    LeaguesIcon,
+    Logo,
+    TransactionIcon
+} from "../assets/Icons.tsx";
 import {LogoutButton} from "../components/auth/Logout.tsx";
 import styled from "styled-components";
 import {LoginButton} from "../components/auth/LoginButton.tsx";
@@ -62,6 +70,9 @@ export function SidebarComponent() {
                     </StyledLink>
                     <StyledLink to="/leagues">
                         <LeaguesIcon />Leagues
+                    </StyledLink>
+                    <StyledLink to="/ffs">
+                        <CrystalBall />Future Sight
                     </StyledLink>
                     <Settings />
                     <SettingsButton/>

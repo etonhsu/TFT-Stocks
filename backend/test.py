@@ -1,43 +1,69 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from app.models.db_models import User, UserLeagues, Portfolio
-from app.utils.get_secret import get_secret
+from datetime import datetime, timezone, timedelta
+from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError
 
-# Database setup
-DATABASE_URL = "postgresql+pg8000://etonhsu:K27AvlaPA6GYZ8NQ2tvt@tft-stocks.c9ooisyqkieb.us-west-2.rds.amazonaws.com:5432/tft-stocks"
-engine = create_engine(DATABASE_URL)
-Session = sessionmaker(bind=engine)
+from app.db.database import get_database_session
+from app.models.db_models import League, User, Portfolio, UserLeagues
 
-def create_portfolios_for_users():
-    session = Session()
+DEFAULT_BALANCE = 100000
 
-    try:
-        users = session.query(User).all()
-        for user in users:
-            # Create a new portfolio
-            new_portfolio = Portfolio(current_value=0)
-            session.add(new_portfolio)
-            session.flush()  # Flush to get the new portfolio ID
+def create_monthly_league():
+    # Initialize the database session using the context manager
+    with get_database_session() as db:
+        try:
+            # Check for existing league with the name "Monthly League 2"
+            existing_league = db.query(League).filter(League.name == "Monthly League 2").first()
+            if existing_league:
+                raise Exception("League 'Monthly League 2' already exists")
 
-            # Create a new user_leagues entry
-            new_user_leagues = UserLeagues(
-                user_id=user.id,
-                league_id=2,  # Default league
-                portfolio_id=new_portfolio.id,
-                balance=100000,  # Default balance
-                rank=0  # Default rank
+            # Define league parameters
+            name = "Monthly League 2"
+            length = 30  # Assuming a monthly league runs for 30 days
+            start_date = datetime.now(timezone.utc)
+            end_date = start_date + timedelta(days=length)
+
+            # Create the new league
+            new_league = League(
+                name=name,
+                start_date=start_date,
+                end_date=end_date,
+                created_by=None,  # Assuming league creation is system-initiated
+                type='custom'
             )
-            session.add(new_user_leagues)
-            print(f'Created default portfolio and user_leagues for user {user.username}')
+            db.add(new_league)
+            db.commit()
+            db.refresh(new_league)
 
-        session.commit()
+            # Fetch all users
+            users = db.query(User).all()
 
-    except Exception as e:
-        session.rollback()
-        print(f"Error creating portfolios and user_leagues: {e}")
+            for user in users:
+                # Create a new portfolio for each user
+                new_portfolio = Portfolio(current_value=DEFAULT_BALANCE)
+                db.add(new_portfolio)
+                db.commit()
+                db.refresh(new_portfolio)
 
-    finally:
-        session.close()
+                # Create a new user_leagues entry for each user with the created portfolio
+                new_user_league = UserLeagues(
+                    user_id=user.id,
+                    league_id=new_league.id,
+                    portfolio_id=new_portfolio.id,
+                    balance=DEFAULT_BALANCE,
+                    rank=0
+                )
+                db.add(new_user_league)
+                db.commit()
 
+            return {"message": "Monthly League 2 created successfully and all users added", "league_id": new_league.id}
+        except SQLAlchemyError as e:
+            db.rollback()
+            raise Exception(f"Database error occurred: {str(e)}")
+        except Exception as e:
+            db.rollback()
+            raise Exception(f"An error occurred: {str(e)}")
+
+# Usage example
 if __name__ == "__main__":
-    create_portfolios_for_users()
+    result = create_monthly_league()
+    print(result)
