@@ -1,6 +1,6 @@
-# TFT Stocks
+# Problem Statement
 
-TFT Stocks is a unique stock market simulation platform based on the League Points of Teamfight Tactics (TFT) players. This application allows users to buy and sell 'player stocks' and track their portfolio performance in real-time, leveraging Riot's API for live data.
+Streaming is one of the core aspects of the Teamfight Tactics community, particularly when top players share their perspectives live. These streams are a blend of entertainment and education, and the best players often have thousands of viewers invested in the outcome of their games. TFTStocks.com builds on this investment by allowing users to purchase "stocks" in their favorite players, providing real stakes as they watch, and a sense of satsifaction when the player does well. As the players climb, the viewers' protfolio grows, creating a new layer of engagement and motivation to follow and support top TFT talent. 
 
 ## Features
 
