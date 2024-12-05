@@ -23,6 +23,36 @@ Streaming is one of the core aspects of the Teamfight Tactics community, particu
   - Create monthly/ set long leagues to compete directly with your friends
   - Play in site wide leagues to see who's the best investor
 
+ ## Entities
+
+ - **Stocks**
+   - Represents the top 750~ players on the NA TFT ladder
+   - Each stock has its own profile, tracking price history and current price
+   - Updates in real time (every 5 minutes)
+   - Publicly available profile, requires user authentication to purchase
+    
+- **Portfolio**
+  - Collection of all user stocks
+  - Shows monetary and % allocation in each stock
+  - Publicly available on user profile
+
+ - **Profile**
+   - Shows portfolio allocation and performance history
+   - Publicly available
+
+- **Dashboard**
+  - Consolidates all site information (profile, leaderboard, individual stocks)
+  - Each user's dashboard is different
+ 
+- **Leaderboard**
+  - Shows the top performing users and stocks across different time periods
+  - Publicly available
+
+- **Leagues**
+  - Allows user to have a different portfolio for each league
+  - Each league has its own leaderboard and dashboard
+  - Portfolio performance in each league is independent
+
 ## Technologies Used
 
 - **Frontend**: React TypeScript (ReactTS), Vite
