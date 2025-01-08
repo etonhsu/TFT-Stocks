@@ -80,5 +80,12 @@ Streaming is one of the core aspects of the Teamfight Tactics community, particu
 - **Security**
   - Secure data storage and communication
 
+## Design and Architecture
+
+**Context Diagram**
+
+![Context Diagram](https://github.com/etonhsu/TFT-Stocks/blob/master/diagrams/Container.jpg)
+
+
 
 
