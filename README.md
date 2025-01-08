@@ -30,36 +30,55 @@ Streaming is one of the core aspects of the Teamfight Tactics community, particu
    - Each stock has its own profile, tracking price history and current price
    - Updates in real time (every 5 minutes)
    - Publicly available profile, requires user authentication to purchase
-    
 - **Portfolio**
   - Collection of all user stocks
   - Shows monetary and % allocation in each stock
   - Publicly available on user profile
-
  - **Profile**
    - Shows portfolio allocation and performance history
    - Publicly available
-
 - **Dashboard**
   - Consolidates all site information (profile, leaderboard, individual stocks)
   - Each user's dashboard is different
- 
 - **Leaderboard**
   - Shows the top performing users and stocks across different time periods
   - Publicly available
-
 - **Leagues**
   - Allows user to have a different portfolio for each league
   - Each league has its own leaderboard and dashboard
   - Portfolio performance in each league is independent
 
-## Technologies Used
+## Technical Requirements
 
 - **Frontend**: React TypeScript (ReactTS), Vite
-- **Backend**: FastAPI, AWS Lambda
-- **Database**: PostgreSQL (Amazon RDS)
+  - React is one of the most popular library for web interface creation, with a large ecosystem of libraries and tools
+  - Component reusability simplifies maintainence and expansion
+  - Typescript catches errors at compile time, and significantly helps with bugfixing 
+- **Backend**: FastAPI
+  - Fast and efficient, leveraging asynchronous programming to handle large numbers of requests efficiently 
+  - Provides automatic generation of OpenAPI and JSON Schema documentation, making it easy to integrate with frontend frameworks and manage RESTful APIs 
+  - Integrates seamlessly with Pydantic for data validation and SQLAlchemy for ORM, both of which enhance developer productivity and code reliability.
+- **Database**: PostgreSQL (AWS RDS)
+  - I originally started with MongoDB before migrating everything to Postgres due to ACID compliance and complexity of the data as I expanded
+  - Using RDS helped keep my entire infrastructure in the same ecosystem, and ensured high availability and durability
 - **Containerization**: Docker, Amazon ECR
 - **CI/CD**: Google Build, Google Cloud Run (initially), AWS
+- **Security**: (Oauth2)
+  - Industry standard in securing APIs and authenticating users
+  - Granular access control allows fine-grained permissions
+  - Supports JWT for stateless authentication
 - **Other**: Riot Games API for real-time data
+
+## Non-Functional Requirements
+
+- **Scalability**
+  - Supports up to 100 concurrent users
+- **Performance**
+  - Low latency (<200ms) for all API requests, particularly transactions
+- **Availability**
+  - 99.9% uptime for all services
+- **Security**
+  - Secure data storage and communication
+
 
 
